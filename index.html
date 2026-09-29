@@ -1,0 +1,1904 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="description" content="Calcule blocos, cobogós, pavê e betão para a sua obra.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Quantificador de Obra</title>
+<meta name="theme-color" content="#0A0D0C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{
+  color-scheme:dark;
+  --bg:#0A0D0C; --bg2:#0F1413; --surface:#141A18; --surface2:#1A2220; --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.14);
+  --ink:#F3F1EA; --muted:#8D9892; --dim:#5B6561;
+  --accent:#FF7A1A; --accent2:#FFB23F; --accent-ink:#1A0E04; --glow:rgba(255,122,26,.38);
+  --blue:#5EC8E5; --blue-dim:rgba(94,200,229,.22); --good:#3DDC97;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;min-height:100vh;overflow-x:hidden}
+
+/* ---------- fundo: planta técnica + brilho ---------- */
+.bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bgfx::before{content:"";position:absolute;inset:-2px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:96px 96px,96px 96px,24px 24px,24px 24px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 20%,#000 30%,transparent 80%);-webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 20%,#000 30%,transparent 80%)}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}
+.orb.a{width:420px;height:420px;background:radial-gradient(circle,#FF7A1A 0%,transparent 65%);top:-160px;right:-120px;animation:drift 18s ease-in-out infinite alternate}
+.orb.b{width:360px;height:360px;background:radial-gradient(circle,#1E6F85 0%,transparent 65%);bottom:-140px;left:-140px;opacity:.45;animation:drift 22s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(-60px,80px) scale(1.15)}}
+
+/* ---------- splash ---------- */
+.splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;transition:opacity .6s var(--ease),transform .7s var(--ease)}
+.splash.out{opacity:0;transform:translateY(-4%) scale(1.04);pointer-events:none}
+.splash-in{display:grid;justify-items:center;gap:18px}
+.wall{display:grid;grid-template-columns:repeat(4,26px);gap:5px}
+.wall i{display:block;height:20px;border-radius:3px;background:linear-gradient(160deg,var(--accent2),var(--accent));box-shadow:0 0 18px var(--glow);
+  transform:translateY(-140px);opacity:0;animation:drop .55s var(--spring) forwards}
+.wall i.w2{grid-column:span 2}
+.wall i.w1{grid-column:span 1}
+@keyframes drop{to{transform:none;opacity:1}}
+.splash h1{font:900 clamp(40px,11vw,76px)/.9 var(--display);letter-spacing:.01em;text-transform:uppercase;margin:0;display:flex;overflow:hidden}
+.splash h1 span{display:inline-block;transform:translateY(105%);animation:rise .6s var(--ease) forwards}
+@keyframes rise{to{transform:none}}
+.splash p{margin:0;font:600 13px var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--muted);opacity:0;animation:fade .6s var(--ease) 1.05s forwards}
+.loadbar{width:180px;height:2px;background:var(--line2);border-radius:2px;overflow:hidden}
+.loadbar b{display:block;height:100%;width:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;animation:load 1.3s var(--ease) .3s forwards;box-shadow:0 0 10px var(--accent)}
+@keyframes load{to{transform:scaleX(1)}}
+@keyframes fade{to{opacity:1}}
+
+/* ---------- estrutura ---------- */
+.app{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding-inline:16px;padding-bottom:120px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding-block:16px 10px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{display:grid;grid-template-columns:repeat(4,7px);gap:2px}
+.logo i{height:6px;border-radius:1.5px;background:var(--accent)}
+.logo i.s2{grid-column:span 2}
+.brand b{font:800 22px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.brand small{display:block;font:500 10px var(--mono);letter-spacing:.24em;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.live{display:flex;align-items:center;gap:7px;font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:ping 2s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 8px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+
+.layout{display:grid;gap:16px}
+@media (min-width:940px){
+  .layout{grid-template-columns:minmax(0,1fr) 440px;align-items:start;gap:28px}
+  .hero-wrap{order:2;position:sticky;top:20px}
+}
+
+/* ---------- HERO / resultado ---------- */
+.hero-wrap{position:relative;z-index:20;padding-top:6px;}
+
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:20px 20px 18px;
+  background:radial-gradient(120% 90% at 100% 0%,rgba(255,122,26,.22),transparent 55%),linear-gradient(160deg,#1B2321,#0F1413 70%);
+  border:1px solid var(--line2);box-shadow:0 20px 60px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06);
+  transition:padding .45s var(--ease),border-radius .45s var(--ease),box-shadow .5s var(--ease)}
+.hero::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,178,63,.16) 50%,transparent 65%);transform:translateX(-120%)}
+.hero.bump::after{animation:sweep .9s var(--ease)}
+.hero.bump{box-shadow:0 20px 60px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,122,26,.5),0 0 40px -6px var(--glow)}
+@keyframes sweep{to{transform:translateX(120%)}}
+.hero-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.eyebrow{font:600 11px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent2)}
+.hero-tag{font:500 11px var(--mono);letter-spacing:.1em;color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.readout{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:6px;transition:margin .45s var(--ease)}
+.odo{font:900 clamp(64px,19vw,112px)/1 var(--display);display:flex;color:var(--ink);letter-spacing:-.01em;
+  text-shadow:0 0 30px rgba(255,122,26,.25);transition:font-size .45s var(--ease)}
+.odo .col{position:relative;height:1em;overflow:hidden;width:.52em;text-align:center;
+  mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);
+  transition:width .4s var(--ease)}
+.odo .col.enter{animation:colin .45s var(--ease)}
+@keyframes colin{from{width:0;opacity:0}}
+.odo .strip{display:flex;flex-direction:column;will-change:transform}
+.odo .strip span{height:1em;line-height:1em;display:block}
+.odo .sep{width:.18em}
+.unit{font:800 clamp(20px,5vw,26px)/1 var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--accent);padding-bottom:.55em;transition:font-size .45s var(--ease)}
+.hero-sub{margin-top:8px;font:500 13px var(--mono);color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 14px;transition:opacity .3s,max-height .45s var(--ease);max-height:60px;overflow:hidden}
+.hero-sub b{color:var(--ink);font-weight:700}
+.hero-price{margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line2);padding-top:12px;transition:opacity .3s,max-height .45s var(--ease),margin .45s var(--ease),padding .45s var(--ease);max-height:80px;overflow:hidden}
+.hero-price span{font:600 11px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.hero-price b{font:800 26px var(--display);letter-spacing:.02em;color:var(--good)}
+.meter{margin-top:14px;height:4px;border-radius:4px;background:var(--line2);overflow:hidden}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transform-origin:left;transition:transform .9s var(--ease);box-shadow:0 0 12px var(--accent)}
+/* compacto ao rolar (telemóvel) */
+@media (max-width:939px){
+  .compact .hero{padding:12px 16px;border-radius:16px}
+  .compact .odo{font-size:44px}
+  .compact .unit{font-size:16px}
+  .compact .readout{margin-top:0}
+  .compact .hero-sub,.compact .hero-price{max-height:0;opacity:0;margin:0;padding-top:0;border-width:0}
+  .compact .meter{margin-top:8px}
+}
+
+
+/* ---------- barra fixa com miniatura ao vivo (telemóvel) ---------- */
+.dock{position:fixed;left:0;right:0;top:0;z-index:45;display:flex;align-items:center;gap:14px;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px;background:#0B0F0E;
+  border-bottom:1px solid var(--line2);box-shadow:0 14px 40px -12px rgba(0,0,0,.85);transform:translateY(-115%);transition:transform .45s var(--ease)}
+.dock::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .4s}
+body.docked .dock{transform:none}
+body.focusing .dock::after{opacity:.9}
+.dock-mini{flex:0 0 0%;height:0;opacity:0;overflow:hidden;display:grid;place-items:center;border-radius:14px;
+  background:radial-gradient(90% 90% at 50% 100%,rgba(94,200,229,.12),transparent 70%),#0F1413;border:1px solid transparent;
+  transition:flex-basis .45s var(--ease),height .45s var(--ease),opacity .35s,border-color .35s}
+body.focusing .dock-mini{flex-basis:56%;height:112px;opacity:1;border-color:var(--line2)}
+.dock-mini > svg{width:100%;height:100%;display:block}
+.dock-mini .iso{width:62%;max-width:180px;transform:perspective(600px) rotateX(55deg) rotateZ(-35deg);filter:drop-shadow(0 14px 12px rgba(0,0,0,.6))}
+.dock-mini .iso > svg{width:100%;height:auto;display:block}
+.dock-read{flex:1;min-width:0;display:grid;gap:2px}
+.dock-label{font:600 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock-num{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.odo.sm{font-size:42px;text-shadow:0 0 22px rgba(255,122,26,.3)}
+body.focusing .odo.sm{font-size:38px}
+.dock-unit{font:800 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding-bottom:.45em}
+.dock.reveal .dock-read{animation:reveal .8s var(--spring)}
+@keyframes reveal{0%{transform:scale(.92)}45%{transform:scale(1.08)}100%{transform:none}}
+@media (min-width:940px){.dock{display:none}}
+
+/* ---------- secções / cartões ---------- */
+main{display:grid;gap:14px;min-width:0}
+.sec{display:grid;gap:14px}
+.sec[hidden]{display:none}
+.sec.show > *{animation:up .6s var(--ease) both;animation-delay:calc(var(--i,0) * 70ms)}
+@keyframes up{from{opacity:0;transform:translateY(22px) scale(.985)}}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 2px 0}
+.sec-head h2{margin:0;font:900 clamp(34px,8vw,52px)/.95 var(--display);text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.sec-head h2 em{font-style:normal;color:var(--accent)}
+.sec-head p{margin:0;font:500 12px var(--mono);color:var(--muted);letter-spacing:.08em;text-align:right;max-width:180px}
+
+.card{position:relative;background:linear-gradient(180deg,rgba(26,34,32,.92),rgba(18,24,22,.92));border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:16px;
+  transition:opacity .35s var(--ease),filter .35s var(--ease),transform .35s var(--ease),border-color .35s,box-shadow .35s}
+.card-title{display:flex;align-items:center;gap:10px;font:600 11px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.card-title i{font-style:normal;color:var(--accent);font-weight:700}
+.card-title::after{content:"";flex:1;height:1px;background:var(--line)}
+/* modo foco */
+body.focusing main .card:not(.is-focus){opacity:.22}
+/* ao editar: sem fundo animado nem desenho grande (mais leve); só a miniatura */
+body.focusing .bgfx{display:none}
+body.focusing main .viz .viz-stage{visibility:hidden}
+body.focusing main .card.is-focus{border-color:rgba(255,122,26,.55);box-shadow:0 0 0 4px rgba(255,122,26,.10),0 24px 50px -20px rgba(0,0,0,.9)}
+/* campo em edição sempre em evidência */
+.field:focus-within > span,.af:focus-within > span{color:var(--accent2)}
+.num:focus-within{background:#1c1510}
+.num:focus-within input{color:#fff}
+body.focusing .tabbar{transform:translate(-50%,170%);opacity:0;pointer-events:none}
+.tabbar{transition:transform .35s var(--ease),opacity .25s}
+body.focusing .hero{box-shadow:0 20px 60px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,122,26,.35),0 0 50px -10px var(--glow)}
+
+/* desenho */
+.viz{padding:0;overflow:hidden;gap:0}
+.viz-stage{position:relative;height:210px;display:grid;place-items:center;
+  background:radial-gradient(80% 90% at 50% 100%,rgba(94,200,229,.08),transparent 70%)}
+.viz-stage > svg,.viz-stage > div > svg{width:100%;height:100%;display:block;overflow:visible}
+.viz-foot{display:flex;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--line);font:500 11px var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.viz-foot b{color:var(--blue);font-weight:700}
+.iso{width:78%;max-width:320px;transform:perspective(900px) rotateX(55deg) rotateZ(-35deg);transition:transform .8s var(--ease);filter:drop-shadow(0 30px 25px rgba(0,0,0,.6))}
+.iso > svg{height:auto}
+
+/* campos */
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fields.one{grid-template-columns:1fr}
+.fields.three{grid-template-columns:repeat(3,1fr)}
+@media (max-width:420px){.fields.three{grid-template-columns:1fr 1fr}.fields.three > :first-child{grid-column:1/-1}}
+.field{display:grid;gap:7px;min-width:0}
+.field > span{font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.num{display:flex;align-items:stretch;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+.num:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,122,26,.18)}
+.num input{flex:1;min-width:0;width:100%;background:transparent;border:0;outline:0;color:var(--ink);font:700 22px var(--mono);padding:12px 4px 12px 12px;font-variant-numeric:tabular-nums}
+.num input::placeholder{color:var(--dim);font-weight:500}
+.num .u{align-self:center;font:600 12px var(--mono);color:var(--muted);padding-right:8px;white-space:nowrap}
+.num button{flex:0 0 36px;border:0;background:rgba(255,255,255,.03);color:var(--muted);font:500 20px var(--mono);cursor:pointer;transition:background .2s,color .2s}
+.num button:active{background:var(--accent);color:var(--accent-ink)}
+.num button:first-child{border-right:1px solid var(--line)}
+.num input + .u + button,.num input + button{border-left:1px solid var(--line)}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hint{margin:-6px 0 0;font-size:13px;color:var(--muted)}
+
+/* segmentado */
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:4px}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:linear-gradient(160deg,var(--accent2),var(--accent));box-shadow:0 6px 20px -6px var(--glow);transition:transform .45s var(--spring),width .45s var(--spring)}
+.seg button{position:relative;z-index:1;border:0;background:none;color:var(--muted);font:600 14px var(--body);padding:11px 6px;cursor:pointer;transition:color .3s}
+.seg button[aria-pressed="true"]{color:var(--accent-ink)}
+
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-18px;padding-inline:18px;padding-block:2px;scroll-snap-type:x proximity}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;scroll-snap-align:start;display:grid;gap:2px;text-align:left;border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer;
+  transition:transform .35s var(--spring),border-color .25s,background .25s,box-shadow .25s}
+.chip b{font:800 19px/1 var(--display);letter-spacing:.03em;text-transform:uppercase}
+.chip small{font:500 11px var(--mono);color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:linear-gradient(160deg,rgba(255,178,63,.16),rgba(255,122,26,.08));box-shadow:0 0 0 1px var(--accent),0 10px 24px -10px var(--glow);transform:translateY(-2px)}
+.chip[aria-pressed="true"] small{color:var(--accent2)}
+.chip:active{transform:scale(.95)}
+
+.reveal{display:grid;grid-template-rows:1fr;transition:grid-template-rows .45s var(--ease),opacity .35s}
+.reveal > div{overflow:hidden;min-height:0;display:grid;gap:14px}
+.reveal.closed{grid-template-rows:0fr;opacity:0}
+
+/* detalhe */
+.rows{display:grid;gap:0}
+.rows .r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line2)}
+.rows .r:last-child{border-bottom:0}
+.rows .r span{color:var(--muted);font-size:14px}
+.rows .r b{font:700 16px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rows .r.hl b{color:var(--accent2)}
+.actions{display:grid;grid-template-columns:1fr auto;gap:10px}
+.btn{position:relative;overflow:hidden;border:0;border-radius:14px;padding:15px 18px;font:700 15px var(--body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .3s var(--spring),box-shadow .3s}
+.btn.primary{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink);box-shadow:0 12px 30px -12px var(--glow)}
+.btn.ghost{background:var(--bg2);color:var(--ink);border:1px solid var(--line2)}
+.btn:active{transform:scale(.97)}
+.btn svg{width:18px;height:18px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:60;transform:translate(-50%,30px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--bg);font:700 14px var(--body);padding:12px 18px;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.5);transition:transform .45s var(--spring),opacity .3s}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.note{margin:0;font-size:12.5px;color:var(--dim);line-height:1.5}
+
+/* ripple */
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rip .6s var(--ease);pointer-events:none}
+@keyframes rip{to{transform:scale(3.5);opacity:0}}
+
+/* tab bar flutuante */
+.tabbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:grid;grid-template-columns:repeat(3,1fr);
+  width:min(440px,calc(100% - 32px));padding:6px;border-radius:22px;background:rgba(20,26,24,.78);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+  border:1px solid var(--line2);box-shadow:0 20px 50px -10px rgba(0,0,0,.8)}
+.tabbar .ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px)/3);border-radius:16px;background:linear-gradient(160deg,var(--accent2),var(--accent));box-shadow:0 8px 24px -8px var(--glow);transition:transform .5s var(--spring)}
+.tabbar button{position:relative;z-index:1;border:0;background:none;color:var(--muted);display:grid;justify-items:center;gap:3px;padding:9px 4px;cursor:pointer;transition:color .3s}
+.tabbar button svg{width:22px;height:22px;transition:transform .45s var(--spring)}
+.tabbar button span{font:800 13px/1 var(--display);letter-spacing:.1em;text-transform:uppercase}
+.tabbar button[aria-selected="true"]{color:var(--accent-ink)}
+.tabbar button[aria-selected="true"] svg{transform:translateY(-1px) scale(1.08)}
+
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+
+
+/* ---------- v13: lancil por lados ---------- */
+.lanc{display:grid;gap:8px;padding:10px;border-radius:12px;border:1px solid rgba(228,232,229,.25);background:rgba(228,232,229,.04)}
+.lanc .lb{color:#E4E8E5!important}
+.lanc svg{width:100%;max-width:280px;justify-self:center;height:auto;display:block;touch-action:manipulation}
+.lanc [data-ledge]{cursor:pointer}
+.lanc-bar{display:flex;align-items:center;gap:6px;font:500 11px var(--mono);color:var(--muted)}
+.lanc-bar span{flex:1}
+.lanc-bar button{border:1px solid var(--line2);background:transparent;color:var(--ink);border-radius:999px;padding:6px 10px;font:600 12px var(--mono);cursor:pointer}
+/* ---------- v12: formas, recortes, desenho ---------- */
+.shapes{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-12px;padding-inline:12px;padding-block:2px}
+.shapes::-webkit-scrollbar{display:none}
+.shp{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);border-radius:12px;padding:7px 10px 7px 7px;cursor:pointer;text-align:left;transition:all .25s var(--ease)}
+.shp .ci{width:30px;height:30px}
+.shp span{display:grid;font:700 13px var(--body);line-height:1.15}
+.shp small{font:500 10px var(--mono);color:var(--muted)}
+.shp[aria-pressed="true"]{border-color:var(--accent);background:rgba(255,122,26,.1);box-shadow:0 0 0 1px var(--accent)}
+.spv-wrap{display:grid;justify-items:center;gap:4px;padding:6px;border-radius:12px;background:rgba(94,200,229,.05);border:1px solid rgba(94,200,229,.18)}
+.spv{width:100%;max-width:260px;height:auto;display:block}
+.warn{margin:0;font:600 12px var(--body);color:#FF8A7A}
+.drawbtn{padding:12px 14px;font-size:14px}
+.cuts{display:grid;gap:8px;padding:10px;border-radius:12px;border:1px dashed rgba(255,107,91,.35);background:rgba(255,107,91,.04)}
+.cuts-h{display:flex;justify-content:space-between;align-items:baseline;font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cuts-h b{color:#FF8A7A;letter-spacing:0;font-size:13px}
+.cut{display:grid;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.cut select{background:var(--surface);color:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font:600 14px var(--body)}
+.cutf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 32px;gap:6px;align-items:end}
+.cutf .del{height:40px}
+.addcut{border:1px dashed rgba(255,107,91,.5);background:transparent;color:#FF8A7A;border-radius:10px;padding:10px;font:600 13px var(--body);cursor:pointer}
+.extras{display:grid;gap:12px;padding-top:4px;border-top:1px dashed var(--line2)}
+.extras .ttl{font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+body.drawing{overflow:hidden}
+.draw{position:fixed;inset:0;z-index:90;background:#0A0D0C;display:grid;grid-template-rows:auto 1fr auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 12px);gap:10px}
+.draw-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.draw-top h3{margin:0;font:800 22px var(--display);text-transform:uppercase;letter-spacing:.04em}
+.draw-info{display:grid;justify-items:end;font:500 11px var(--mono);color:var(--muted)}
+.draw-info b{font:800 26px var(--display);color:var(--accent2);letter-spacing:.02em}
+.draw-stage{min-height:0;display:grid;place-items:center}
+#drawSvg{width:100%;height:100%;max-height:100%;touch-action:none;display:block}
+.draw-bar{display:grid;gap:8px}
+.draw-row{display:flex;gap:6px;flex-wrap:wrap}
+.draw-row button{flex:1;min-width:0;border:1px solid var(--line2);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 8px;font:600 13px var(--body);cursor:pointer}
+.draw-row button:disabled{opacity:.35}
+.draw-row button[aria-pressed="true"]{background:var(--blue);color:#06212a;border-color:var(--blue)}
+.draw-row .ok{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink);border:0;font-weight:800}
+.draw-hint{margin:0;font:500 11px var(--mono);color:var(--muted);text-align:center}
+
+/* ---------- v6: terreno/lados, 2D/3D, cobogós ---------- */
+.sides{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:10px;border-radius:12px;background:rgba(94,200,229,.05);border:1px solid rgba(94,200,229,.18)}
+.sides .pres{display:grid;gap:6px}
+.sides .pres button{border:1px solid var(--line2);background:transparent;color:var(--muted);font:600 12px var(--mono);padding:7px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:all .25s var(--ease)}
+.sides .pres button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sides > svg{width:100%;height:auto;max-height:150px;display:block;touch-action:manipulation}
+.sides [data-side]{cursor:pointer}
+.sides .cap{grid-column:1/-1;font:500 11px var(--mono);color:var(--muted);letter-spacing:.04em}
+.sides .cap b{color:var(--blue)}
+.viewtog{position:absolute;top:10px;right:10px;z-index:2;display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(10,13,12,.8);border:1px solid var(--line2)}
+.viewtog button{border:0;background:transparent;color:var(--muted);font:700 11px var(--mono);letter-spacing:.08em;padding:6px 11px;border-radius:999px;cursor:pointer;transition:all .25s var(--ease)}
+.viewtog button[aria-pressed="true"]{background:var(--blue);color:#06212a}
+.iso.flat{transform:none!important;width:88%;filter:none;height:168px;margin-top:-6px;display:block}
+.iso.flat > svg{width:100%;height:100%;display:block}
+.dock-mini .iso.flat{height:104px}
+.orbctl{position:absolute;left:10px;top:10px;z-index:2;display:none;gap:4px}
+.orbctl button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);background:rgba(10,13,12,.85);color:var(--ink);font:700 16px/1 var(--mono);cursor:pointer}
+.orbctl button:active{background:var(--blue);color:#06212a}
+.viz-stage.is3d{touch-action:none;cursor:grab}
+.viz-stage.is3d:active{cursor:grabbing}
+.viz-stage.is3d .orbctl{display:flex}
+.viz-stage.is3d .iso{transition:none}
+.chip.has-ic{grid-template-columns:34px auto;column-gap:10px;align-items:center}
+.chip.has-ic .ci{grid-row:1/3;width:34px;height:34px;border-radius:6px;overflow:hidden;display:block}
+.dock-mini .flat-floor{width:88%}
+
+/* ---------- v3: 4 separadores, várias áreas, produtos ---------- */
+.tabbar{grid-template-columns:repeat(4,1fr);width:min(500px,calc(100% - 24px))}
+.tabbar .ind{width:calc((100% - 12px)/4)}
+.tabbar button span{font-size:12px;letter-spacing:.08em}
+
+.areas{display:grid;gap:10px}
+.area{background:var(--bg2);border:1px solid var(--line2);border-radius:16px;padding:12px;display:grid;gap:10px;transition:border-color .25s,box-shadow .25s}
+.area:focus-within{border-color:rgba(255,122,26,.6);box-shadow:0 0 0 3px rgba(255,122,26,.12)}
+.area.enter{animation:areaIn .55s var(--spring)}
+@keyframes areaIn{from{opacity:0;transform:translateY(-10px) scale(.96)}}
+.area.leave{animation:areaOut .35s var(--ease) forwards}
+@keyframes areaOut{to{opacity:0;transform:translateX(40px) scale(.95)}}
+.area-head{display:flex;align-items:center;gap:8px}
+.badge{flex:0 0 auto;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink);font:800 16px/1 var(--display)}
+.area-name{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed var(--line2);color:var(--ink);font:600 15px var(--body);padding:6px 2px;outline:0}
+.area-name:focus{border-bottom-color:var(--accent)}
+.area-name::placeholder{color:var(--dim)}
+.del{flex:0 0 auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:var(--muted);font:500 18px/1 var(--mono);cursor:pointer;transition:background .2s,color .2s}
+.del:hover,.del:active{background:#3a1512;color:#FF8A7A;border-color:#5a2019}
+.mini{display:flex;gap:4px;flex-wrap:wrap}
+.mini button{border:1px solid var(--line2);background:transparent;color:var(--muted);font:600 12px var(--mono);letter-spacing:.06em;padding:6px 10px;border-radius:999px;cursor:pointer;transition:all .25s var(--ease)}
+.mini button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.area-fields{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:8px}
+@media (max-width:420px){.area-fields.n4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.af{display:grid;gap:4px;min-width:0}
+.af span{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af .num input{font-size:18px;padding:10px 4px 10px 10px}
+.af .num .u{font-size:11px;padding-right:7px}
+.area-sub{display:flex;justify-content:space-between;align-items:baseline;font:500 12px var(--mono);color:var(--muted)}
+.area-sub b{font:700 15px var(--mono);color:var(--accent2)}
+.add{display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px dashed rgba(255,122,26,.55);background:rgba(255,122,26,.05);color:var(--accent2);border-radius:14px;padding:14px;font:700 15px var(--body);cursor:pointer;transition:background .25s,transform .3s var(--spring)}
+.add:hover{background:rgba(255,122,26,.1)}
+.add:active{transform:scale(.98)}
+.add i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 18px/1 var(--mono)}
+.area-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(94,200,229,.10),transparent);border:1px solid rgba(94,200,229,.25)}
+.area-total span{font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--blue)}
+.area-total b{font:800 24px var(--display);letter-spacing:.02em}
+
+.chipw{position:relative;flex:0 0 auto;display:flex}
+.chip-x{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);background:var(--surface2);color:var(--muted);font:600 13px/1 var(--mono);cursor:pointer;z-index:2}
+.chip.newp{border-style:dashed;border-color:rgba(255,122,26,.55);background:transparent}
+.chip.newp b{color:var(--accent2)}
+.pform{display:grid;gap:12px;padding:14px;border-radius:14px;background:var(--bg2);border:1px solid rgba(255,122,26,.4)}
+.pform .ptitle{font:800 18px var(--display);letter-spacing:.05em;text-transform:uppercase}
+.pform .or{font:600 11px var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center}
+.pform .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.textin{background:var(--surface);border:1px solid var(--line2);border-radius:12px;color:var(--ink);font:600 16px var(--body);padding:12px;outline:0;width:100%}
+.textin:focus{border-color:var(--accent)}
+.pform .btns{display:grid;grid-template-columns:1fr auto;gap:8px}
+.pform .btn{padding:12px 16px}
+.rate-note{font:500 12px var(--mono);color:var(--muted)}
+.rate-note b{color:var(--accent2)}
+/* ---------- v14: nada pode alargar a página no telemóvel ---------- */
+.layout,main,.sec,.card,.areas,.area,.reveal > div,.extras,.cuts,.cut,.lanc,.pform,.rows,.af-wrap,.spv-wrap,.field,.af{grid-template-columns:minmax(0,1fr);min-width:0}
+.sides{grid-template-columns:auto minmax(0,1fr)}
+.chips,.shapes,.mini,.lanc-bar,.area-head,.dock-read{min-width:0;max-width:100%}
+.chips,.shapes{width:auto}
+@media (min-width:940px){.layout{grid-template-columns:minmax(0,1fr) 440px}}
+.app{overflow-x:clip}
+.draw-row button{font-size:12px;padding:10px 4px;overflow-wrap:anywhere}
+
+/* ---------- v16: modo simples, vazio, PC ---------- */
+.modesw{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg2);border:1px solid var(--line2)}
+.modesw button{border:0;background:transparent;color:var(--muted);font:700 12px var(--body);letter-spacing:.02em;padding:8px 13px;border-radius:999px;cursor:pointer;transition:all .3s var(--ease)}
+.modesw button[aria-pressed="true"]{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink)}
+body.simple-mode .tabbar{display:none}
+body.simple-mode .app{padding-bottom:40px}
+.qseg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:14px;background:var(--bg2);border:1px solid var(--line2)}
+.qseg button{border:0;background:transparent;color:var(--muted);font:600 13px var(--body);padding:10px 6px;border-radius:10px;cursor:pointer;transition:all .3s var(--ease)}
+.qseg button[aria-pressed="true"]{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink)}
+.viz-empty{height:100%;display:grid;place-items:center;text-align:center;padding:20px;font:500 13px var(--mono);color:var(--dim);line-height:1.6}
+@media (max-width:380px){.brand small{display:none}.brand b{font-size:18px}.modesw button{padding:7px 10px}}
+@media (min-width:940px){
+  .app{padding-inline:32px}
+  .topbar{padding-block:24px 18px}
+  .sec-head h2{font-size:56px}
+  .draw{inset:0 auto 0 50%;width:min(760px,100%);transform:translateX(-50%);border-inline:1px solid var(--line2)}
+  .viz-stage{height:260px}
+  .tabbar{bottom:20px}
+}
+
+.topbar{gap:10px}
+.brand{min-width:0}
+@media (max-width:480px){.brand small{display:none}.brand b{font-size:16px;letter-spacing:.02em;white-space:nowrap}.logo{grid-template-columns:repeat(4,5px)}.modesw button{padding:7px 10px;font-size:11.5px}}
+@media (max-width:350px){.brand b{font-size:15px}}
+</style>
+</head>
+<body>
+
+
+<div class="bgfx" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div></div>
+
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-in">
+    <div class="wall">
+      <i class="w2" style="animation-delay:.05s"></i><i class="w2" style="animation-delay:.12s"></i>
+      <i class="w1" style="animation-delay:.22s"></i><i class="w2" style="animation-delay:.28s"></i><i class="w1" style="animation-delay:.34s"></i>
+      <i class="w2" style="animation-delay:.44s"></i><i class="w2" style="animation-delay:.5s"></i>
+    </div>
+    <h1 id="splash-t"></h1>
+    <p>Muros · Grelhas · Pavê · Lajes</p>
+    <div class="loadbar"><b></b></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i class="s2"></i><i class="s2"></i><i></i><i class="s2"></i><i></i></div>
+      <div><b>Quantificador</b><small>de obra</small></div>
+    </div>
+    <div class="modesw" role="group" aria-label="Modo"><button data-appmode="simples" aria-pressed="true">Simples</button><button data-appmode="completo" aria-pressed="false">Completo</button></div>
+  </header>
+
+  <div class="layout">
+    <aside class="hero-wrap" id="heroWrap">
+      <div class="hero" id="hero">
+        <div class="hero-top">
+          <span class="eyebrow" id="h-label">Blocos necessários</span>
+          <span class="hero-tag" id="h-tag">+5% perdas</span>
+        </div>
+        <div class="readout">
+          <div class="odo" id="odo" role="status" aria-live="polite"></div>
+          <div class="unit" id="h-unit">blocos</div>
+        </div>
+        <div class="hero-sub" id="h-sub"></div>
+        <div class="hero-price" id="h-price" hidden><span>Valor estimado</span><b id="h-price-v">0 MT</b></div>
+        <div class="meter"><i id="h-meter"></i></div>
+      </div>
+    </aside>
+    <main id="main"></main>
+  </div>
+</div>
+
+<nav class="tabbar" role="tablist" id="tabbar">
+  <span class="ind" id="ind"></span>
+  <button role="tab" aria-selected="true" data-tab="muros" id="t-muros">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="4" width="9" height="5" rx="1"/><rect x="13" y="4" width="9" height="5" rx="1"/><rect x="7" y="11" width="10" height="5" rx="1"/><rect x="2" y="18" width="9" height="3" rx="1"/><rect x="13" y="18" width="9" height="3" rx="1"/></svg><span>Muros</span></button>
+  <button role="tab" aria-selected="false" data-tab="grelhas" id="t-grelhas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>Grelhas</span></button>
+  <button role="tab" aria-selected="false" data-tab="pave" id="t-pave">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M7.5 5.5l9 5M16.5 5.5l-9 5"/></svg><span>Pavê</span></button>
+  <button role="tab" aria-selected="false" data-tab="lajes" id="t-lajes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8l9-4 9 4v8l-9 4-9-4V8z"/><path d="M3 8l9 4 9-4M12 12v8"/></svg><span>Lajes</span></button>
+</nav>
+
+<div class="dock" id="dock" aria-hidden="true">
+  <div class="dock-mini" id="dockMini"></div>
+  <div class="dock-read"><span class="dock-label" id="dockLabel">Blocos necessários</span><div class="dock-num"><div class="odo sm" id="dockOdo"></div><span class="dock-unit" id="dockUnit">blocos</span></div></div>
+</div>
+
+<div class="draw" id="draw" hidden>
+  <div class="draw-top"><h3>Desenhar a área</h3><div class="draw-info" id="drawInfo"></div></div>
+  <div class="draw-stage"><svg id="drawSvg" viewBox="0 0 20 20" aria-label="Quadrícula para desenhar a área"></svg></div>
+  <div class="draw-bar">
+    <p class="draw-hint">Toque para marcar cada canto · arraste um canto para o mover · toque num lado para inserir um canto</p>
+    <div class="draw-row" id="drawGrid"><button data-g="10">10 m</button><button data-g="20">20 m</button><button data-g="50">50 m</button><button data-g="100">100 m</button></div>
+    <div class="draw-row"><button id="drawUndo">Desfazer</button><button id="drawDel">Apagar canto</button><button id="drawRect">Rectângulo</button><button id="drawClear">Limpar</button></div>
+    <div class="draw-row"><button id="drawCancel">Cancelar</button><button id="drawOk" class="ok">Usar esta área</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copiado</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pf = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
+const fmt = (v, d = 2) => (isFinite(v) ? v : 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: d });
+const fmtFix = (v, d) => (isFinite(v) ? v : 0).toLocaleString('pt-PT', { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const buzz = () => { try { navigator.vibrate && navigator.vibrate(7); } catch (e) {} };
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let uid = 0; const nid = () => 'a' + (++uid);
+
+/* ================= configuração ================= */
+const CFG = {
+  muros: { kind: 'wall', pattern: 'bond', unit: 'blocos', label: 'Blocos necessários', piece: 'blocos',
+    title: 'Muros &amp; <em>paredes</em>', lede: 'Some quantas partes do muro quiser', vizLabel: 'Vista do muro', jUnit: 'cm', jDef: 1, junta: 'com', mortar: true, freeDef: 12.5,
+    products: [
+      { id: 'b10', name: 'Bloco 10', sub: '10×20×40 cm', L: .40, W: .20, t: .10 },
+      { id: 'b15', name: 'Bloco 15', sub: '15×20×40 cm', L: .40, W: .20, t: .15 },
+      { id: 'b20', name: 'Bloco 20', sub: '20×20×40 cm', L: .40, W: .20, t: .20 }],
+    sel: 'b15',
+    areas: [{ name: '', mode: 'dim', a: '', b: '', d: '' }],
+    note: 'Argamassa de assentamento estimada com traço 1:6 (cimento : areia). Valores aproximados; confirme sempre em obra.' },
+  grelhas: { kind: 'wall', pattern: 'grelha', unit: 'grelhas', label: 'Grelhas necessárias', piece: 'grelhas',
+    title: 'Cobogós &amp; <em>grelhas</em>', lede: 'Faixas de cobogó em uma ou várias partes', vizLabel: 'Vista das faixas', jUnit: 'cm', jDef: 1, junta: 'com', mortar: false, freeDef: 25,
+    products: [
+      { id: 'cf', name: 'Cobogó Folhas', model: 'folhas' },
+      { id: 'cfl', name: 'Cobogó Flor', model: 'flor' },
+      { id: 'ccr', name: 'Cobogó Cruz', model: 'cruz' },
+      { id: 'cq', name: 'Cobogó Quadrados', model: 'quad' }],
+    sel: 'cf',
+    areas: [{ name: '', mode: 'dim', a: '', b: '', d: '' }],
+    note: 'Grelha assenta normalmente com junta de 1 cm. Para produtos por m², a junta já está incluída no número.' },
+  pave: { kind: 'floor', unit: 'peças', label: 'Peças de pavê', piece: 'peças',
+    title: 'Pavê', lede: 'Quintal, entrada, passeio… some tudo', vizLabel: 'Vista do pavimento', jUnit: 'mm', jDef: 3, junta: 'sem', freeDef: 50,
+    products: [
+      { id: 'p2010', name: 'Pavê 20×10', sub: 'rectangular', L: .20, W: .10 },
+      { id: 'p2020', name: 'Pavê 20×20', sub: 'quadrado', L: .20, W: .20 }],
+    sel: 'free',
+    areas: [{ name: '', mode: 'dim', a: '', b: '', cuts: [] }],
+    note: 'Pavê normalmente assenta sem junta (encostado). Se o produto é vendido por m², escreva quantas peças entram em 1 m².' },
+  lajes: { kind: 'slab', unit: 'sacos', label: 'Cimento · sacos 50 kg', piece: 'sacos',
+    title: 'Lajes &amp; <em>betão</em>', lede: 'Lajes, vigas e pilares, tudo somado', vizLabel: 'Vista das peças',
+    areas: [{ name: '', mode: 'laje', a: '', b: '', c: '', q: 1 }],
+    note: 'Volume seco × 1,54 e cimento a 1 440 kg/m³. Valores aproximados; confirme em obra.' }
+};
+const TABS = ['muros', 'grelhas', 'pave', 'lajes'];
+const S = {};
+TABS.forEach(k => {
+  const c = CFG[k];
+  S[k] = { sel: c.sel, junta: c.junta, j: c.jDef, perda: 5, preco: '', free: c.freeDef, traco: '1,2,3', gsize: '20', gw: 20, gh: 20, lancil: 'sem', lancilLen: 1, areiaEsp: 4,
+    areas: c.areas.map(a => ({ id: nid(), q: 1, c: 10, d: 0, m: '', v: '', ...a })),
+    custom: store.get('qo-prod-' + k, []) };
+});
+let tab = 'muros';
+const results = {};
+const VIEW = Object.assign({ muros: '2d', grelhas: '2d', pave: '2d', lajes: '2d' }, store.get('qo-view', {}));
+
+/* ================= cobogós (desenhos 100×100, a partir das fotos) ================= */
+const CC = '#C2C8C4', CH = '#121716', CS = '#8E9692';
+const Q4 = inner => ['', 'translate(100,0) scale(-1,1)', 'translate(0,100) scale(1,-1)', 'translate(100,100) scale(-1,-1)'].map(t => `<g transform="${t}">${inner}</g>`).join('');
+function cobogo(model) {
+  if (model === 'folhas') return `<rect width="100" height="100" fill="${CC}"/>` +
+    `<path d="M37 8H63L50 30Z M37 92H63L50 70Z M8 37V63L30 50Z M92 37V63L70 50Z" fill="${CH}"/>` +
+    Q4(`<ellipse cx="32" cy="20" rx="12" ry="5.5" transform="rotate(45 32 20)" fill="${CH}"/><ellipse cx="20" cy="32" rx="12" ry="5.5" transform="rotate(45 20 32)" fill="${CH}"/>`);
+  if (model === 'flor') return `<rect width="100" height="100" fill="${CC}"/>` +
+    Q4(`<path d="M46 46V26Q46 13 33 13H26Q13 13 13 26V33Q13 46 26 46Z" fill="${CH}"/><path d="M40 40V29Q40 20 31 20H29Q20 20 20 29V31Q20 40 29 40Z" fill="none" stroke="#3a4341" stroke-width="3"/>`);
+  if (model === 'cruz') return `<rect width="100" height="100" fill="${CH}"/><g fill="none" stroke="${CC}" stroke-width="6">` +
+    `<rect x="3" y="3" width="94" height="94"/><path d="M50 3V97M3 50H97"/>` +
+    `<circle cx="50" cy="36" r="13"/><circle cx="64" cy="50" r="13"/><circle cx="50" cy="64" r="13"/><circle cx="36" cy="50" r="13"/>` +
+    Q4(`<path d="M3 31A28 28 0 0 0 31 3"/>`) + `</g>`;
+  return `<rect width="100" height="100" fill="${CC}"/>` + Q4(`<rect x="11" y="11" width="35" height="35" rx="7" fill="none" stroke="${CS}" stroke-width="2"/><rect x="16" y="16" width="25" height="25" rx="5" fill="${CH}"/>`) +
+    `<path d="M50 4V96M4 50H96" stroke="#A3AAA6" stroke-width="1.5"/>`;
+}
+
+/* ================= HTML ================= */
+const numIn = (id, val, unit, step, ph, attrs = '') => `<div class="num">${step ? `<button type="button" data-d="-1" tabindex="-1">−</button>` : ''}<input id="${id}" type="number" inputmode="decimal" value="${val}" ${step ? `step="${step}"` : ''} ${ph ? `placeholder="${ph}"` : ''} ${attrs}><span class="u">${unit}</span>${step ? `<button type="button" data-d="1" tabindex="-1">+</button>` : ''}</div>`;
+const shareBtns = k => `<div class="actions">
+  <button class="btn primary" data-share="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg>Enviar resumo</button>
+  <button class="btn ghost" data-copy="${k}" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>`;
+
+function secHTML(k) {
+  const c = CFG[k], s = S[k];
+  const tog = VIEW[k] ? `<div class="viewtog" data-view="${k}"><button data-v="2d" aria-pressed="${VIEW[k] === '2d'}">2D</button><button data-v="3d" aria-pressed="${VIEW[k] === '3d'}">3D</button></div>` : '';
+  const ctl = VIEW[k] ? `<div class="orbctl"><button data-orb="reset" aria-label="Voltar à posição inicial">⟲</button><button data-orb="out" aria-label="Afastar">−</button><button data-orb="in" aria-label="Aproximar">+</button></div>` : '';
+  const st3 = VIEW[k] === '3d' ? ' is3d' : '';
+  const vizInner = c.kind === 'floor' ? `<div class="viz-stage${st3}" data-orbit="${k}">${tog}${ctl}<div class="iso${VIEW[k] === '2d' ? ' flat' : ''}" id="viz-${k}"></div></div>` : `<div class="viz-stage${st3}" data-orbit="${k}" style="position:relative">${tog}${ctl}<div id="viz-${k}" style="width:100%;height:100%"></div></div>`;
+  const totLabel = c.kind === 'slab' ? 'm³ no total' : 'm² no total';
+  let prod;
+  if (c.kind === 'slab') {
+    prod = `<div class="card" style="--i:4">
+      <div class="card-title"><i>02</i>Traço cimento : areia : brita</div>
+      <div class="chips" data-group="traco" data-k="${k}">
+        <button class="chip" aria-pressed="true" data-v="1,2,3"><b>1 : 2 : 3</b><small>lajes, pilares, vigas</small></button>
+        <button class="chip" aria-pressed="false" data-v="1,2,4"><b>1 : 2 : 4</b><small>sapatas, pisos</small></button>
+        <button class="chip" aria-pressed="false" data-v="1,3,6"><b>1 : 3 : 6</b><small>limpeza, enchimento</small></button>
+      </div>
+      <label class="field"><span>Perdas</span>${numIn(k + '-perda', s.perda, '%', 1, '', `data-s="perda"`)}</label>
+      <label class="field"><span>Preço do saco de cimento (opcional)</span>${numIn(k + '-preco', '', 'MT', 0, 'ex.: 520', `data-s="preco"`)}</label>
+    </div>`;
+  } else {
+    prod = `<div class="card" style="--i:4">
+      <div class="card-title"><i>02</i>Produto</div>
+      <div class="chips" id="chips-${k}" data-k="${k}"></div>
+      ${k === 'grelhas' ? `<div class="extras"><div class="ttl">Tamanho da peça</div>
+        <div class="fields"><label class="field"><span>Largura</span>${numIn(k + '-gw', s.gw, 'cm', 1, '', `data-s="gw"`)}</label>
+        <label class="field"><span>Altura</span>${numIn(k + '-gh', s.gh, 'cm', 1, '', `data-s="gh"`)}</label></div>
+        <div class="chips" id="gsizes">${['20', '25', '30', '40'].map(v => `<button class="chip" aria-pressed="${s.gw == v && s.gh == v}" data-gs="${v}"><b>${v}×${v}</b><small>rápido</small></button>`).join('')}</div></div>` : ''}
+      <div class="reveal closed" id="${k}-freebox"><div>
+        <label class="field"><span>Quantas ${c.piece} entram em 1 m²</span>${numIn(k + '-free', s.free, c.piece + '/m²', 1, '', `data-s="free"`)}</label>
+      </div></div>
+      <div class="reveal closed" id="${k}-pformbox"><div id="${k}-pform"></div></div>
+      <div class="reveal" id="${k}-juntabox"><div>
+        <div class="seg" data-group="junta" data-k="${k}"><span class="thumb"></span>
+          <button aria-pressed="${s.junta === 'com'}" data-v="com">Com junta</button>
+          <button aria-pressed="${s.junta === 'sem'}" data-v="sem">Sem junta</button>
+        </div>
+      </div></div>
+      <div class="fields">
+        <label class="field" id="${k}-jfield"><span>Junta</span>${numIn(k + '-j', s.j, c.jUnit, c.jUnit === 'cm' ? .5 : 1, '', `data-s="j"`)}</label>
+        <label class="field"><span>Perdas</span>${numIn(k + '-perda', s.perda, '%', 1, '', `data-s="perda"`)}</label>
+      </div>
+      <p class="rate-note" id="${k}-rate"></p>
+      <label class="field"><span>${c.kind === 'floor' ? 'Preço por m²' : 'Preço por ' + c.piece.replace(/s$/, '')} (opcional)</span>${numIn(k + '-preco', '', c.kind === 'floor' ? 'MT/m²' : 'MT', 0, c.kind === 'floor' ? 'ex.: 650' : 'ex.: 38', `data-s="preco"`)}</label>
+      ${c.kind === 'floor' ? `<div class="extras"><div class="ttl">Extras do pavê</div>
+        <div class="seg" data-group="lancil" data-k="${k}"><span class="thumb"></span><button aria-pressed="true" data-v="sem">Sem lancil</button><button aria-pressed="false" data-v="com">Com lancil (meio-fio)</button></div>
+        <div class="fields"><label class="field" id="${k}-llfield"><span>Lancil: compr. da peça</span>${numIn(k + '-lancilLen', s.lancilLen, 'm', .5, '', `data-s="lancilLen"`)}</label>
+        <label class="field"><span>Areia de assentamento</span>${numIn(k + '-areiaEsp', s.areiaEsp, 'cm', 1, '', `data-s="areiaEsp"`)}</label></div></div>` : ''}
+    </div>`;
+  }
+  return `<section class="sec" id="sec-${k}" hidden>
+    <div class="sec-head" style="--i:0"><h2>${c.title}</h2><p>${c.lede}</p></div>
+    <div class="card viz" style="--i:1">${vizInner}<div class="viz-foot"><span>${c.vizLabel}</span><span><b id="vt-${k}">0</b> ${totLabel}</span></div></div>
+    <div class="card" style="--i:2">
+      <div class="card-title"><i>01</i>${c.kind === 'slab' ? 'Peças a betonar' : 'Áreas'}</div>
+      <div class="areas" id="areas-${k}"></div>
+      <button class="add" data-add="${k}"><i>+</i>Adicionar ${c.kind === 'slab' ? 'peça' : 'área'}</button>
+      <div class="area-total"><span id="tn-${k}">2 áreas</span><b id="tt-${k}">0</b></div>
+    </div>
+    ${prod}
+    <div class="card" style="--i:5">
+      <div class="card-title"><i>03</i>Resumo</div>
+      <div class="rows" id="det-${k}"></div>
+      ${shareBtns(k)}
+      <p class="note">${c.note}</p>
+    </div>
+  </section>`;
+}
+
+const MODES = {
+  wall: [['dim', 'Medidas'], ['perim', 'Terreno (lados)'], ['area', 'm²']],
+  floor: [['dim', 'Rectângulo'], ['forma', 'Outras formas'], ['desenho', 'Desenhar'], ['area', 'm²']],
+  slab: [['laje', 'Laje'], ['viga', 'Viga/pilar'], ['vol', 'm³']]
+};
+function fieldsHTML(k, r) {
+  const kind = CFG[k].kind, f = (fld, label, unit) => `<label class="af"><span>${label}</span><div class="num"><input type="number" inputmode="decimal" data-f="${fld}" value="${r[fld] ?? ''}" id="${r.id}-${fld}" placeholder="0"><span class="u">${unit}</span></div></label>`;
+  let list;
+  if (kind === 'wall' && r.mode === 'perim') return `<div class="area-fields n4" style="--n:4">${[f('pa', 'Frente', 'm'), f('pb', 'Lado', 'm'), f('h', 'Altura', 'm'), f('d', 'Portão', 'm²')].join('')}</div>${sidesHTML(k, r)}`;
+  if (kind === 'wall') list = r.mode === 'dim' ? [f('a', 'Comprimento', 'm'), f('b', 'Altura', 'm'), f('d', 'Descontar', 'm²')] : [f('m', 'Área', 'm²'), f('d', 'Descontar', 'm²')];
+  else if (kind === 'floor') return floorFieldsHTML(k, r, f);
+  else if (r.mode === 'laje') list = [f('a', 'Compr.', 'm'), f('b', 'Largura', 'm'), f('c', 'Espess.', 'cm'), f('q', 'Qtd', 'un')];
+  else if (r.mode === 'viga') list = [f('a', 'Compr.', 'm'), f('b', 'Largura', 'cm'), f('c', 'Altura', 'cm'), f('q', 'Qtd', 'un')];
+  else list = [f('v', 'Volume', 'm³')];
+  return `<div class="area-fields n${list.length}" style="--n:${list.length}">${list.join('')}</div>`;
+}
+/* ================= pavê: formas, desenho e recortes ================= */
+const SHAPES = {
+  tri: { name: 'Triângulo', sub: 'base × altura', f: [['fa', 'Base', 'm'], ['fb', 'Altura', 'm']], def: { fa: 6, fb: 4 } },
+  tri3: { name: 'Triângulo', sub: '3 lados', f: [['fa', 'Lado a', 'm'], ['fb', 'Lado b', 'm'], ['fc', 'Lado c', 'm']], def: { fa: 6, fb: 5, fc: 4 } },
+  trap: { name: 'Trapézio', sub: 'bases × altura', f: [['fa', 'Base maior', 'm'], ['fb', 'Base menor', 'm'], ['fc', 'Altura', 'm']], def: { fa: 8, fb: 5, fc: 4 } },
+  quad: { name: '4 lados', sub: 'irregular', f: [['fa', 'Lado a', 'm'], ['fb', 'Lado b', 'm'], ['fc', 'Lado c', 'm'], ['fd', 'Lado d', 'm'], ['fe', 'Diagonal', 'm']], def: { fa: 8, fb: 5, fc: 7, fd: 6, fe: 9 } },
+  L: { name: 'Forma em L', sub: 'total − canto', f: [['fa', 'Compr. total', 'm'], ['fb', 'Largura total', 'm'], ['fc', 'Canto: compr.', 'm'], ['fd', 'Canto: larg.', 'm']], def: { fa: 10, fb: 8, fc: 4, fd: 3 } },
+  circ: { name: 'Círculo', sub: 'diâmetro', f: [['fa', 'Diâmetro', 'm']], def: { fa: 4 } },
+  semi: { name: 'Meio círculo', sub: 'diâmetro', f: [['fa', 'Diâmetro', 'm']], def: { fa: 6 } }
+};
+const CUTS = {
+  caixa: { name: 'Caixa de força', a: .6, b: .6 }, visita: { name: 'Caixa de visita', a: .8, b: .8 },
+  canteiro: { name: 'Canteiro / jardim', a: 2, b: 1 }, arvore: { name: 'Árvore (Ø)', a: 1, b: 1, circ: 1 },
+  pilar: { name: 'Pilar', a: .3, b: .3 }, outro: { name: 'Outro recorte', a: 1, b: 1 }
+};
+const heron = (a, b, c) => { const s = (a + b + c) / 2, v = s * (s - a) * (s - b) * (s - c); return v > 0 ? Math.sqrt(v) : 0; };
+const circlePts = (d, n, half) => { const r = d / 2, out = []; const N = half ? n / 2 : n; for (let i = 0; i <= N; i++) { const t = Math.PI * (half ? 1 : 2) * i / (half ? N : n); out.push([r + r * Math.cos(t), r - r * Math.sin(t)]); } if (!half) out.pop(); return out; };
+function normPts(pts) { if (!pts.length) return pts; const mx = Math.min(...pts.map(p => p[0])), my = Math.min(...pts.map(p => p[1])); return pts.map(p => [p[0] - mx, p[1] - my]); }
+const shoelace = pts => Math.abs(pts.reduce((t, p, i) => { const q = pts[(i + 1) % pts.length]; return t + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+const perimOf = pts => pts.reduce((t, p, i) => { const q = pts[(i + 1) % pts.length]; return t + Math.hypot(q[0] - p[0], q[1] - p[1]); }, 0);
+function shapeGeom(shape, r) {
+  const v = f => pf(r[f]), res = (pts, area, perim, ok = true, extra) => ({ pts: normPts(pts), area: ok ? area : 0, perim: ok ? perim : 0, ok, ...extra });
+  if (shape === 'tri') { const b = v('fa'), h = v('fb'); return res([[0, h], [b, h], [b / 2, 0]], b * h / 2, b + 2 * Math.hypot(h, b / 2), b > 0 && h > 0); }
+  if (shape === 'tri3') {
+    const a = v('fa'), b = v('fb'), c = v('fc'), A = heron(a, b, c);
+    if (!(A > 0)) return res([[0, 0], [1, 0], [.5, .8]], 0, 0, false, { err: 'Estes 3 lados não fecham um triângulo' });
+    const x = (a * a + b * b - c * c) / (2 * a), y = Math.sqrt(Math.max(0, b * b - x * x));
+    return res([[0, y], [a, y], [x, 0]], A, a + b + c, true, { labels: ['a', 'c', 'b'] });
+  }
+  if (shape === 'trap') { const B = v('fa'), b = v('fb'), h = v('fc'), o = (B - b) / 2; return res([[0, h], [B, h], [B - o, 0], [o, 0]], (B + b) / 2 * h, B + b + 2 * Math.hypot(h, o), B > 0 && b >= 0 && h > 0 && b <= B); }
+  if (shape === 'quad') {
+    const a = v('fa'), b = v('fb'), c = v('fc'), d = v('fd'), e = v('fe'), A1 = heron(a, b, e), A2 = heron(c, d, e);
+    if (!(A1 > 0 && A2 > 0)) return res([[0, 0], [1, 0], [1, 1], [0, 1]], 0, 0, false, { err: 'Lados e diagonal não fecham a forma' });
+    const x1 = (e * e + a * a - b * b) / (2 * e), y1 = -Math.sqrt(Math.max(0, a * a - x1 * x1));
+    const x3 = (e * e + d * d - c * c) / (2 * e), y3 = Math.sqrt(Math.max(0, d * d - x3 * x3));
+    return res([[0, 0], [x1, y1], [e, 0], [x3, y3]], A1 + A2, a + b + c + d, true, { labels: ['a', 'b', 'c', 'd'], diag: 1 });
+  }
+  if (shape === 'L') { const A = v('fa'), B = v('fb'), c = Math.min(v('fc'), A), d = Math.min(v('fd'), B); return res([[0, 0], [A - c, 0], [A - c, d], [A, d], [A, B], [0, B]], A * B - c * d, 2 * (A + B), A > 0 && B > 0); }
+  if (shape === 'circ') { const d = v('fa'); return res(circlePts(d, 36), Math.PI * d * d / 4, Math.PI * d, d > 0); }
+  if (shape === 'semi') { const d = v('fa'); return res(circlePts(d, 36, true), Math.PI * d * d / 8, Math.PI * d / 2 + d, d > 0); }
+  return res([], 0, 0, false);
+}
+// geometria de uma área do pavê (qualquer modo)
+function floorGeom(r) {
+  if (r.mode === 'forma') return shapeGeom(r.shape || 'trap', r);
+  if (r.mode === 'desenho') { const pts = r.pts || []; return pts.length >= 3 ? { pts: normPts(pts), area: shoelace(pts), perim: perimOf(pts), ok: true } : { pts: [], area: 0, perim: 0, ok: false, err: 'Desenhe pelo menos 3 pontos' }; }
+  if (r.mode === 'area') { const m = pf(r.m), s = Math.sqrt(Math.max(m, 0)); return { pts: [[0, 0], [s, 0], [s, s], [0, s]], area: m, perim: 0, ok: m > 0, noPerim: 1 }; }
+  const a = pf(r.a), b = pf(r.b); return { pts: [[0, 0], [a, 0], [a, b], [0, b]], area: a * b, perim: 2 * (a + b), ok: a > 0 && b > 0 };
+}
+const cutArea = c => { const t = CUTS[c.t] || CUTS.outro, q = Math.max(0, Math.round(pf(c.q))); return q * (t.circ ? Math.PI * pf(c.a) ** 2 / 4 : pf(c.a) * pf(c.b)); };
+const cutsArea = r => (r.cuts || []).reduce((t, c) => t + cutArea(c), 0);
+
+// pré-visualização pequena da forma com as medidas de cada lado
+function shapeSVG(g, labels) {
+  if (!g.pts.length) return '';
+  const W = 170, H = 110, pad = 18, xs = g.pts.map(p => p[0]), ys = g.pts.map(p => p[1]);
+  const w = Math.max(...xs) || 1, h = Math.max(...ys) || 1, s = Math.min((W - pad * 2) / w, (H - pad * 2) / h);
+  const ox = (W - w * s) / 2, oy = (H - h * s) / 2, T = p => [ox + p[0] * s, oy + p[1] * s];
+  const pts = g.pts.map(T);
+  let lab = '';
+  if (labels !== false && g.pts.length <= 8) g.pts.forEach((p, i) => {
+    const q = g.pts[(i + 1) % g.pts.length], a = T(p), b = T(q), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const cx = ox + w * s / 2, cy = oy + h * s / 2, dx = mx - cx, dy = my - cy, dl = Math.hypot(dx, dy) || 1;
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1]), L = g.labels ? g.labels[i] + ' ' : '';
+    lab += `<text x="${mx + dx / dl * 10}" y="${my + dy / dl * 10 + 3}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" font-weight="700" fill="#5EC8E5">${L}${fmt(len, 2)}</text>`;
+  });
+  const diag = g.diag ? `<line x1="${pts[0][0]}" y1="${pts[0][1]}" x2="${pts[2][0]}" y2="${pts[2][1]}" stroke="#FFB23F" stroke-width="1.2" stroke-dasharray="4 3"/>` : '';
+  return `<svg class="spv" viewBox="0 0 ${W} ${H}"><polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="rgba(255,122,26,.18)" stroke="#FF7A1A" stroke-width="2" stroke-linejoin="round"/>${diag}${lab}</svg>`;
+}
+const shapeIcon = key => { const g = shapeGeom(key, SHAPES[key].def), xs = g.pts.map(p => p[0]), ys = g.pts.map(p => p[1]), m = Math.max(Math.max(...xs), Math.max(...ys)) || 1;
+  return `<svg class="ci" viewBox="-2 -2 104 104"><polygon points="${g.pts.map(p => [p[0] / m * 100, p[1] / m * 100].join(',')).join(' ')}" fill="rgba(255,122,26,.35)" stroke="#FF7A1A" stroke-width="5" stroke-linejoin="round"/></svg>`; };
+
+function cutsHTML(k, r) {
+  const list = (r.cuts || []).map(c => {
+    const t = CUTS[c.t] || CUTS.outro;
+    return `<div class="cut" data-cut="${c.id}">
+      <select data-cf="t" aria-label="Tipo de recorte">${Object.entries(CUTS).map(([v, o]) => `<option value="${v}" ${c.t === v ? 'selected' : ''}>${o.name}</option>`).join('')}</select>
+      <div class="cutf">
+        <label class="af"><span>${t.circ ? 'Diâmetro' : 'Compr.'}</span><div class="num"><input type="number" inputmode="decimal" data-cf="a" value="${c.a}" id="${c.id}-a"><span class="u">m</span></div></label>
+        ${t.circ ? '' : `<label class="af"><span>Largura</span><div class="num"><input type="number" inputmode="decimal" data-cf="b" value="${c.b}" id="${c.id}-b"><span class="u">m</span></div></label>`}
+        <label class="af"><span>Qtd</span><div class="num"><input type="number" inputmode="numeric" data-cf="q" value="${c.q}" id="${c.id}-q"><span class="u">un</span></div></label>
+        <button class="del" data-delcut="${c.id}" aria-label="Remover recorte">×</button>
+      </div></div>`;
+  }).join('');
+  const tot = cutsArea(r);
+  return `<div class="cuts">
+    <div class="cuts-h"><span>Recortes a descontar</span>${tot > 0 ? `<b>− ${fmt(tot, 2)} m²</b>` : ''}</div>
+    ${list}
+    <button class="addcut" data-addcut="${r.id}">+ Recorte (caixa de força, canteiro, árvore…)</button>
+  </div>`;
+}
+function floorFieldsHTML(k, r, f) {
+  let main;
+  if (r.mode === 'forma') {
+    const sh = r.shape || 'trap', g = floorGeom(r);
+    main = `<div class="shapes">${Object.entries(SHAPES).map(([v, o]) => `<button class="shp" data-shape="${v}" aria-pressed="${sh === v}">${shapeIcon(v)}<span>${o.name}<small>${o.sub}</small></span></button>`).join('')}</div>
+      <div class="area-fields n${SHAPES[sh].f.length}" style="--n:${Math.min(3, SHAPES[sh].f.length)}">${SHAPES[sh].f.map(([fl, l, u]) => f(fl, l, u)).join('')}</div>
+      <div class="spv-wrap" data-spv="${r.id}">${shapeSVG(g)}${g.err ? `<p class="warn">${g.err}</p>` : ''}</div>`;
+  } else if (r.mode === 'desenho') {
+    const g = floorGeom(r);
+    main = `<div class="spv-wrap" data-spv="${r.id}">${g.pts.length ? shapeSVG(g) : '<p class="rate-note">Ainda sem desenho.</p>'}${g.err && (r.pts || []).length ? `<p class="warn">${g.err}</p>` : ''}</div>
+      <button class="btn ghost drawbtn" data-draw="${r.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>${(r.pts || []).length ? 'Editar o desenho' : 'Desenhar a forma'}</button>`;
+  } else if (r.mode === 'area') main = `<div class="area-fields n1" style="--n:1">${f('m', 'Área', 'm²')}</div>`;
+  else main = `<div class="area-fields n2" style="--n:2">${f('a', 'Comprimento', 'm')}${f('b', 'Largura', 'm')}</div>`;
+  return main + (S[k].lancil === 'com' ? lancilHTML(k, r) : '') + cutsHTML(k, r);
+}
+
+/* ---------- lancil por lados ---------- */
+// lados de uma forma: cada lado agrupa segmentos do polígono (o círculo é um só contorno)
+function floorEdges(r, g) {
+  const n = g.pts.length; if (n < 3 || g.noPerim) return [];
+  const seg = i => { const a = g.pts[i], b = g.pts[(i + 1) % n]; return Math.hypot(b[0] - a[0], b[1] - a[1]); };
+  const all = [...Array(n).keys()];
+  if (r.mode === 'forma' && r.shape === 'circ') return [{ segs: all, len: g.perim, name: 'contorno' }];
+  if (r.mode === 'forma' && r.shape === 'semi') { const arc = all.slice(0, n - 1); return [{ segs: arc, len: arc.reduce((t, i) => t + seg(i), 0), name: 'curva' }, { segs: [n - 1], len: seg(n - 1), name: 'diâmetro' }]; }
+  return all.map(i => ({ segs: [i], len: seg(i) }));
+}
+const lancSel = (r, edges) => { const L = r.lsides; return edges.map((e, i) => !Array.isArray(L) || L.includes(i)); };
+function lancilLen(r) { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.reduce((t, e, i) => t + (on[i] ? e.len : 0), 0); }
+function lancilHTML(k, r) {
+  const g = floorGeom(r), E = floorEdges(r, g);
+  if (!E.length) return `<div class="lanc"><div class="cuts-h"><span>Lancil nesta área</span></div><p class="rate-note">${r.mode === 'area' ? 'Em "m²" não há contorno. Use Rectângulo, Outras formas ou Desenhar.' : 'Complete a forma para escolher os lados.'}</p></div>`;
+  const on = lancSel(r, E), W = 190, H = 120, pad = 20, xs = g.pts.map(p => p[0]), ys = g.pts.map(p => p[1]);
+  const w = Math.max(...xs) || 1, h = Math.max(...ys) || 1, sc = Math.min((W - pad * 2) / w, (H - pad * 2) / h), ox = (W - w * sc) / 2, oy = (H - h * sc) / 2;
+  const T = p => [ox + p[0] * sc, oy + p[1] * sc], P = g.pts.map(T), n = P.length;
+  let lines = '', labs = '';
+  E.forEach((e, i) => {
+    const d = e.segs.map((si, j) => { const a = P[si], b = P[(si + 1) % n]; return (j ? '' : `M${a[0].toFixed(1)} ${a[1].toFixed(1)}`) + `L${b[0].toFixed(1)} ${b[1].toFixed(1)}`; }).join('');
+    lines += `<g data-ledge="${i}"><path d="${d}" fill="none" stroke="transparent" stroke-width="22" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${on[i] ? '#E4E8E5' : '#5B6561'}" stroke-width="${on[i] ? 7 : 2.5}" stroke-linecap="round" stroke-linejoin="round" ${on[i] ? '' : 'stroke-dasharray="5 5"'}/></g>`;
+    const mid = e.segs[Math.floor(e.segs.length / 2)], a = P[mid], b = P[(mid + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const cx = ox + w * sc / 2, cy = oy + h * sc / 2, dx = mx - cx, dy = my - cy, dl = Math.hypot(dx, dy) || 1;
+    labs += `<text x="${mx + dx / dl * 12}" y="${my + dy / dl * 12 + 3}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" font-weight="700" fill="${on[i] ? '#E4E8E5' : '#5B6561'}">${fmt(e.len, 2)}</text>`;
+  });
+  const tot = E.reduce((t, e, i) => t + (on[i] ? e.len : 0), 0), cnt = on.filter(Boolean).length;
+  return `<div class="lanc" data-lanc="${r.id}">
+    <div class="cuts-h"><span>Lancil nesta área</span><b class="lb">${fmt(tot, 2)} m</b></div>
+    <svg viewBox="0 0 ${W} ${H}" aria-label="Toque nos lados que levam lancil"><polygon points="${P.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="rgba(255,122,26,.12)"/>${lines}${labs}</svg>
+    <div class="lanc-bar"><span>${cnt} de ${E.length} ${E.length === 1 ? 'lado' : 'lados'} · toque nos lados</span><button data-lall="${r.id}">Todos</button><button data-lnone="${r.id}">Nenhum</button></div>
+  </div>`;
+}
+function refreshLanc(k, r) { const el = document.querySelector(`[data-lanc="${r.id}"]`) || document.querySelector(`.area[data-id="${r.id}"] .lanc`); if (el) el.outerHTML = lancilHTML(k, r); }
+
+function refreshSpv(k, r) { const el = document.querySelector(`[data-spv="${r.id}"]`); if (!el) return; const g = floorGeom(r); el.innerHTML = (g.pts.length ? shapeSVG(g) : '') + (g.err ? `<p class="warn">${g.err}</p>` : ''); }
+
+/* ---------- editor de desenho (tocar nos cantos) ---------- */
+const DR = { k: null, id: null, pts: [], G: 20, sel: -1, hist: [], drag: -1 };
+const snapStep = G => G <= 10 ? .1 : G <= 20 ? .25 : G <= 50 ? .5 : 1;
+function openDraw(k, id) {
+  const r = S[k].areas.find(a => a.id === id); if (!r) return;
+  DR.k = k; DR.id = id; DR.pts = (r.pts || []).map(p => [...p]); DR.sel = -1; DR.hist = [];
+  const mx = DR.pts.length ? Math.max(...DR.pts.flat()) : 0; DR.G = r.G || [10, 20, 50, 100].find(g => g >= mx * 1.15) || 100;
+  $('draw').hidden = false; document.body.classList.add('drawing'); renderDraw();
+}
+function closeDraw(save) {
+  if (save) { const r = S[DR.k].areas.find(a => a.id === DR.id); if (r) { if ((r.pts || []).length !== DR.pts.length) r.lsides = null; r.pts = DR.pts.map(p => [...p]); r.G = DR.G; const row = document.querySelector(`.area[data-id="${r.id}"]`); if (row) row.querySelector('.af-wrap').innerHTML = fieldsHTML(DR.k, r); update(DR.k); } }
+  $('draw').hidden = true; document.body.classList.remove('drawing');
+}
+function renderDraw() {
+  const G = DR.G, sv = $('drawSvg'), fs = G / 36;
+  let grid = '';
+  const major = G <= 20 ? 5 : 10, minor = G <= 20 ? 1 : G <= 50 ? 2 : 5;
+  for (let v = 0; v <= G + 1e-9; v += minor) { const M = Math.abs(v / major - Math.round(v / major)) < 1e-6;
+    grid += `<line x1="${v}" y1="0" x2="${v}" y2="${G}" stroke="${M ? 'rgba(94,200,229,.35)' : 'rgba(255,255,255,.07)'}" stroke-width="${M ? 1.2 : .8}" vector-effect="non-scaling-stroke"/><line x1="0" y1="${v}" x2="${G}" y2="${v}" stroke="${M ? 'rgba(94,200,229,.35)' : 'rgba(255,255,255,.07)'}" stroke-width="${M ? 1.2 : .8}" vector-effect="non-scaling-stroke"/>`;
+    if (M && v > 0) grid += `<text x="${v}" y="${-fs * .4}" font-size="${fs}" text-anchor="middle" fill="#5EC8E5" font-family="JetBrains Mono,monospace">${v}</text><text x="${-fs * .3}" y="${v + fs * .35}" font-size="${fs}" text-anchor="end" fill="#5EC8E5" font-family="JetBrains Mono,monospace">${v}</text>`; }
+  const P = DR.pts, n = P.length;
+  let shape = '';
+  if (n >= 3) shape += `<polygon points="${P.map(p => p.join(',')).join(' ')}" fill="rgba(255,122,26,.22)" stroke="none"/>`;
+  for (let i = 0; i < n - (n >= 3 ? 0 : 1); i++) {
+    const a = P[i], b = P[(i + 1) % n], closing = i === n - 1;
+    shape += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#FF7A1A" stroke-width="3" vector-effect="non-scaling-stroke" ${closing ? 'stroke-dasharray="6 4"' : ''}/>`;
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (L > G / 30) shape += `<text x="${(a[0] + b[0]) / 2}" y="${(a[1] + b[1]) / 2 - fs * .4}" font-size="${fs * 1.05}" font-weight="700" text-anchor="middle" fill="#FFF" stroke="#0A0D0C" stroke-width="${fs * .25}" paint-order="stroke" font-family="JetBrains Mono,monospace">${fmt(L, 2)} m</text>`;
+  }
+  P.forEach((p, i) => { shape += `<circle cx="${p[0]}" cy="${p[1]}" r="${G / (i === DR.sel ? 38 : 55)}" fill="${i === DR.sel ? '#FFB23F' : '#0A0D0C'}" stroke="#FFB23F" stroke-width="2" vector-effect="non-scaling-stroke"/>`; });
+  sv.setAttribute('viewBox', `${-G * .07} ${-G * .07} ${G * 1.1} ${G * 1.1}`);
+  sv.innerHTML = `<rect x="0" y="0" width="${G}" height="${G}" fill="#0F1413"/>${grid}${shape}`;
+  const A = n >= 3 ? shoelace(P) : 0, per = n >= 3 ? perimOf(P) : 0;
+  $('drawInfo').innerHTML = n >= 3 ? `<b>${fmt(A, 2)} m²</b><span>${n} cantos · perímetro ${fmt(per, 2)} m</span>` : `<b>${n}/3</b><span>toque na quadrícula para marcar os cantos</span>`;
+  document.querySelectorAll('#drawGrid button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.g === G));
+  $('drawDel').disabled = DR.sel < 0; $('drawUndo').disabled = !DR.hist.length;
+}
+function drawPt(e) { const sv = $('drawSvg'), m = sv.getScreenCTM().inverse(), p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m), st = snapStep(DR.G);
+  return [Math.min(DR.G, Math.max(0, Math.round(p.x / st) * st)), Math.min(DR.G, Math.max(0, Math.round(p.y / st) * st))].map(v => +v.toFixed(3)); }
+function initDraw() {
+  const sv = $('drawSvg');
+  sv.addEventListener('pointerdown', e => {
+    e.preventDefault(); const p = drawPt(e), G = DR.G, near = DR.pts.findIndex(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < G / 22);
+    DR.hist.push(DR.pts.map(q => [...q]));
+    if (near >= 0) { DR.sel = near; DR.drag = near; }
+    else {
+      // tocar perto de um lado insere um canto nesse lado; senão acrescenta no fim
+      let ins = -1;
+      if (DR.pts.length >= 3) DR.pts.forEach((a, i) => { const b = DR.pts[(i + 1) % DR.pts.length], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2)); if (Math.hypot(a[0] + t * dx - p[0], a[1] + t * dy - p[1]) < G / 40 && ins < 0) ins = i + 1; });
+      if (ins > 0) DR.pts.splice(ins, 0, p); else DR.pts.push(p);
+      DR.sel = ins > 0 ? ins : DR.pts.length - 1; DR.drag = DR.sel;
+    }
+    try { sv.setPointerCapture(e.pointerId); } catch (_) {}
+    buzz(); renderDraw();
+  });
+  sv.addEventListener('pointermove', e => { if (DR.drag < 0) return; DR.pts[DR.drag] = drawPt(e); renderDraw(); });
+  const up = () => { DR.drag = -1; }; sv.addEventListener('pointerup', up); sv.addEventListener('pointercancel', up);
+  $('draw').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.g) { DR.G = +b.dataset.g; renderDraw(); }
+    else if (b.id === 'drawUndo' && DR.hist.length) { DR.pts = DR.hist.pop(); DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawDel' && DR.sel >= 0) { DR.hist.push(DR.pts.map(q => [...q])); DR.pts.splice(DR.sel, 1); DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawClear') { DR.hist.push(DR.pts.map(q => [...q])); DR.pts = []; DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawRect') { DR.hist.push(DR.pts.map(q => [...q])); const s = DR.G * .1, e2 = DR.G * .7; DR.pts = [[s, s], [e2, s], [e2, DR.G * .55], [s, DR.G * .55]]; DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawOk') closeDraw(true);
+    else if (b.id === 'drawCancel') closeDraw(false);
+    buzz();
+  });
+}
+
+const SIDE_NAMES = { F: 'Frente', T: 'Fundo', E: 'Esquerda', D: 'Direita' };
+const PRESETS = [['FTED', '4 lados'], ['TED', '3 lados'], ['ED', '2 lados'], ['T', '1 lado']];
+const perimLen = r => [...(r.sides ?? 'FTED')].reduce((t, c) => t + (c === 'F' || c === 'T' ? pf(r.pa) : pf(r.pb)), 0);
+function sidesHTML(k, r) {
+  const sd = r.sides ?? 'FTED', a = Math.max(pf(r.pa), .1), b = Math.max(pf(r.pb), .1);
+  const k2 = Math.min(150 / a, 100 / b), w = a * k2, h = b * k2, x = (190 - w) / 2, y = (130 - h) / 2;
+  const L = (id, x1, y1, x2, y2) => { const on = sd.includes(id);
+    return `<g data-side="${id}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width="22"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? '#FF7A1A' : '#5B6561'}" stroke-width="${on ? 7 : 2.5}" stroke-linecap="round" ${on ? '' : 'stroke-dasharray="5 5"'}/></g>`; };
+  const T = (tx, ty, t, rot) => `<text x="${tx}" y="${ty}" ${rot ? `transform="rotate(-90 ${tx} ${ty})"` : ''} text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700" fill="#5EC8E5">${t}</text>`;
+  const n = sd.length;
+  return `<div class="sides" data-sides="${r.id}">
+    <div class="pres">${PRESETS.map(([v, l]) => `<button data-preset="${v}" aria-pressed="${sd === v}">${l}</button>`).join('')}</div>
+    <svg viewBox="0 0 190 130" aria-label="Planta do terreno: toque nos lados">
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(94,200,229,.06)"/>
+      ${L('T', x, y, x + w, y)}${L('F', x, y + h, x + w, y + h)}${L('E', x, y, x, y + h)}${L('D', x + w, y, x + w, y + h)}
+      ${T(x + w / 2, y + h + 14, 'FRENTE ' + fmt(pf(r.pa), 1) + ' m')}${T(x + w / 2, y - 6, 'FUNDO')}${T(x - 7, y + h / 2, 'ESQ.', 1)}${T(x + w + 13, y + h / 2, 'LADO ' + fmt(pf(r.pb), 1) + ' m', 1)}
+    </svg>
+    <div class="cap">Toque nos lados para ligar/desligar. ${n ? `${n} ${n === 1 ? 'lado' : 'lados'}: ${[...sd].map(c => SIDE_NAMES[c]).join(', ')} · <b>${fmt(perimLen(r), 2)} m</b> de muro` : 'Escolha pelo menos um lado'}</div>
+  </div>`;
+}
+function areaHTML(k, r, i) {
+  const modes = MODES[CFG[k].kind];
+  const ph = CFG[k].kind === 'slab' ? 'Nome (ex.: laje da sala)' : 'Nome (ex.: frente, quintal)';
+  return `<div class="area" data-id="${r.id}">
+    <div class="area-head"><span class="badge">${i + 1}</span>
+      <input class="area-name" id="${r.id}-name" data-f="name" value="${esc(r.name)}" placeholder="${ph}" aria-label="Nome da área">
+      <button class="del" data-del="${r.id}" aria-label="Remover">×</button></div>
+    <div class="mini" data-mode="${r.id}">${modes.map(([v, l]) => `<button aria-pressed="${r.mode === v}" data-v="${v}">${l}</button>`).join('')}</div>
+    <div class="af-wrap">${fieldsHTML(k, r)}</div>
+    <div class="area-sub"><span>Subtotal</span><b data-sub="${r.id}" data-v="0">0</b></div>
+  </div>`;
+}
+function renderAreas(k, enterId) {
+  const box = $('areas-' + k);
+  box.innerHTML = S[k].areas.map((r, i) => areaHTML(k, r, i)).join('');
+  if (enterId && !RM) { const el = box.querySelector(`[data-id="${enterId}"]`); el && el.classList.add('enter'); }
+  box.querySelectorAll('.del').forEach(b => b.hidden = S[k].areas.length < 2);
+}
+
+function allProducts(k) { return [...CFG[k].products, ...S[k].custom, { id: 'free', name: 'Por m²', sub: 'escreva quantas' }]; }
+function renderChips(k) {
+  const box = $('chips-' + k); if (!box) return;
+  box.innerHTML = allProducts(k).map(p => {
+    const sub = p.custom ? (p.pm2 ? fmt(p.pm2, 1) + '/m²' : p.sub) : p.model ? `${fmt(pf(S[k].gw))}×${fmt(pf(S[k].gh))} cm` : p.sub;
+    const ic = p.model ? `<svg class="ci" viewBox="0 0 100 100" aria-hidden="true">${cobogo(p.model)}</svg>` : '';
+    const chip = `<button class="chip${ic ? ' has-ic' : ''}" aria-pressed="${S[k].sel === p.id}" data-p="${p.id}">${ic}<b>${esc(p.name.replace('Cobogó ', ''))}</b><small>${esc(sub)}</small></button>`;
+    return p.custom ? `<div class="chipw">${chip}<button class="chip-x" data-delp="${p.id}" aria-label="Apagar ${esc(p.name)}">×</button></div>` : chip;
+  }).join('') + `<button class="chip newp" data-newp="${k}"><b>+ Produto</b><small>guardar o seu</small></button>`;
+}
+function pformHTML(k) {
+  const c = CFG[k];
+  return `<div class="pform">
+    <div class="ptitle">Novo produto</div>
+    <input class="textin" id="${k}-np-name" placeholder="Nome (ex.: Pavê Tijolinho)" aria-label="Nome do produto">
+    <label class="field"><span>Quantas ${c.piece} entram em 1 m²</span><div class="num"><input id="${k}-np-pm2" type="number" inputmode="decimal" placeholder="ex.: 150"><span class="u">/m²</span></div></label>
+    <div class="or">ou pela medida da peça</div>
+    <div class="row2">
+      <label class="field"><span>Comprimento</span><div class="num"><input id="${k}-np-l" type="number" inputmode="decimal" placeholder="20"><span class="u">cm</span></div></label>
+      <label class="field"><span>Largura</span><div class="num"><input id="${k}-np-w" type="number" inputmode="decimal" placeholder="10"><span class="u">cm</span></div></label>
+    </div>
+    <label class="field"><span>${c.kind === 'floor' ? 'Preço por m²' : 'Preço por peça'} (opcional)</span><div class="num"><input id="${k}-np-price" type="number" inputmode="decimal" placeholder="ex.: 12"><span class="u">MT</span></div></label>
+    <div class="btns"><button class="btn primary" data-savep="${k}">Guardar produto</button><button class="btn ghost" data-cancelp="${k}">Cancelar</button></div>
+  </div>`;
+}
+
+$('main').innerHTML = TABS.map(secHTML).join('');
+TABS.forEach(k => { renderAreas(k); renderChips(k); const pf_ = $(k + '-pform'); if (pf_) pf_.innerHTML = pformHTML(k); });
+
+/* ================= ODÓMETRO (rolo de slot) ================= */
+const groupDigits = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+function makeOdo(el) {
+  const st = { v: null };
+  const set = n => {
+  n = Math.max(0, Math.round(n));
+  el.setAttribute('aria-label', n.toLocaleString('pt-PT'));
+  if (n === st.v) return;
+  const prev = st.v; st.v = n;
+  const chars = [...groupDigits(n)], pchars = prev == null ? [] : [...groupDigits(prev)];
+  const up = prev == null || n >= prev, big = prev != null && Math.abs(n - prev) > 50;
+  el.innerHTML = '';
+  const cols = [];
+  chars.forEach((ch, i) => {
+    const fr = chars.length - 1 - i;
+    if (ch === ' ') { const sp = document.createElement('div'); sp.className = 'sep'; el.appendChild(sp); return; }
+    const pch = pchars[pchars.length - 1 - fr];
+    const oldD = pch && pch !== ' ' ? +pch : null, d = +ch;
+    const col = document.createElement('div'); col.className = 'col' + (oldD == null && prev != null ? ' enter' : '');
+    const strip = document.createElement('div'); strip.className = 'strip'; strip.setAttribute('aria-hidden', 'true');
+    let h = ''; for (let q = 0; q < 50; q++) h += `<span>${q % 10}</span>`; strip.innerHTML = h;
+    col.appendChild(strip); el.appendChild(col);
+    const start = 20 + (oldD ?? 0), changed = prev == null || oldD !== d;
+    const target = !changed ? start : up ? 30 + d + (big ? 10 : 0) : 10 + d - (big ? 10 : 0);
+    strip.style.transform = `translateY(${-start}em)`;
+    cols.push({ strip, target, final: 20 + d, changed });
+  });
+  if (RM) { cols.forEach(c => c.strip.style.transform = `translateY(${-c.final}em)`); return; }
+  el.offsetHeight;
+  let o = 0;
+  cols.forEach(c => {
+    if (!c.changed) return;
+    const dur = 650 + o++ * 130;
+    c.strip.style.transition = `transform ${dur}ms cubic-bezier(.15,.85,.25,1.08)`;
+    c.strip.style.transform = `translateY(${-c.target}em)`;
+    c.strip.addEventListener('transitionend', () => { c.strip.style.transition = 'none'; c.strip.style.transform = `translateY(${-c.final}em)`; }, { once: true });
+  });
+  };
+  return { set, reset: () => { st.v = null; } };
+}
+const odoBig = makeOdo($('odo')), odoDock = makeOdo($('dockOdo'));
+function setOdo(n) { odoBig.set(n); odoDock.set(n); }
+/* ================= contagem ================= */
+function countTo(el, to, d, suffix) {
+  if (!el) return;
+  const from = parseFloat(el.dataset.v || '0'); el.dataset.v = to;
+  if (RM || from === to) { el.textContent = fmtFix(to, d) + suffix; return; }
+  const t0 = performance.now(), dur = 700; cancelAnimationFrame(el._raf);
+  const step = now => { const t = Math.min(1, (now - t0) / dur); el.textContent = fmtFix(from + (to - from) * easeOut(t), d) + suffix; if (t < 1) el._raf = requestAnimationFrame(step); };
+  el._raf = requestAnimationFrame(step);
+}
+function renderRows(id, rows) {
+  const box = $(id), sig = rows.map(r => r[0]).join('|');
+  if (box.dataset.sig !== sig) { box.dataset.sig = sig; box.innerHTML = rows.map(r => `<div class="r${r[4] ? ' hl' : ''}"><span>${esc(r[0])}</span><b data-v="0"></b></div>`).join(''); }
+  box.querySelectorAll('b').forEach((b, i) => countTo(b, rows[i][1], rows[i][2], rows[i][3]));
+}
+
+/* ================= desenhos ================= */
+const vizCur = {}, vizRaf = {};
+function lerp(a, b, t) {
+  if (typeof b === 'number') return typeof a === 'number' ? a + (b - a) * t : b;
+  if (Array.isArray(b)) return Array.isArray(a) && a.length === b.length ? b.map((x, i) => lerp(a[i], x, t)) : b;
+  if (b && typeof b === 'object') { const o = {}; for (const k in b) o[k] = lerp(a ? a[k] : undefined, b[k], t); return o; }
+  return b;
+}
+function tweenViz(key, target, draw) {
+  const from = vizCur[key], t0 = performance.now(), dur = RM || !from ? 0 : 550;
+  cancelAnimationFrame(vizRaf[key]);
+  const step = now => { const t = dur ? Math.min(1, (now - t0) / dur) : 1; const p = lerp(from, target, easeOut(t)); vizCur[key] = p; draw(p, key); if (t < 1) vizRaf[key] = requestAnimationFrame(step); };
+  vizRaf[key] = requestAnimationFrame(step);
+}
+const MONO = 'font-family="JetBrains Mono,monospace"';
+let HL = null; // área em edição {k, id}
+const hlIndex = key => HL && HL.k === key ? S[key].areas.findIndex(a => a.id === HL.id) : -1;
+function outViz(key, svg) {
+  const editing = document.body.classList.contains('focusing');
+  if (!editing) $('viz-' + key).innerHTML = svg || `<div class="viz-empty">Escreva as medidas para ver o desenho</div>`; // ao editar só se desenha a miniatura
+  if (key === tab && (editing || innerWidth < 940)) $('dockMini').innerHTML = CFG[key].kind === 'floor' ? `<div class="iso${VIEW[key] === '2d' ? ' flat flat-floor' : ''}" style="${VIEW[key] === '3d' ? 'transform:' + floorTf(key) : ''}">${svg}</div>` : svg;
+}
+const drawSlab = (p, k) => VIEW[k] === '3d' ? drawBoxes(p, k) : drawSlabPlan(p, k);
+const DRAW = { wall: (p, k) => VIEW[k] === '3d' ? drawWall3D(p, k) : drawWall(p, k), floor: (p, k) => drawFloor(p, k), slab: drawSlab };
+function redraw(k) { if (vizCur[k]) DRAW[CFG[k].kind](vizCur[k], k); }
+function drawSlabPlan(p, key) {
+  const W = 360, H = 210, pad = 26;
+  const boxes = p.boxes.filter(b => b.a > 0 && b.b > 0), hl = hlIndex(key);
+  if (!boxes.length) { outViz(key, ''); return; }
+  const maxA = Math.max(...boxes.map(b => Math.max(b.a, b.b)));
+  const items = boxes.map(b => ({ b, w: b.a, l: b.b }));
+  const gap = maxA * .12, totW = items.reduce((t, it) => t + it.w, 0) + gap * (items.length - 1), maxL = Math.max(...items.map(it => it.l));
+  const s = Math.min((W - pad * 2) / totW, (H - pad * 2 - 16) / maxL);
+  let x = (W - totW * s) / 2; const y0 = (H - maxL * s) / 2 - 6; let body = '';
+  items.forEach(({ b, w, l }) => {
+    const ww = Math.max(2, w * s), hh = Math.max(2, l * s), y = y0 + (maxL * s - hh) / 2, id = Math.round(b.idx), on = id === hl, dim = hl >= 0 && !on;
+    body += `<g opacity="${dim ? .3 : 1}"><rect x="${x}" y="${y}" width="${ww}" height="${hh}" rx="2" fill="url(#top-${key})"/><rect x="${x}" y="${y}" width="${ww}" height="${hh}" rx="2" fill="url(#agg-${key})"/>
+      <rect x="${x}" y="${y}" width="${ww}" height="${hh}" rx="2" fill="none" stroke="${on ? '#FFB23F' : '#FF7A1A'}" stroke-width="${on ? 3 : 1.4}"/></g>
+      <g ${MONO} font-weight="700"><rect x="${x + 4}" y="${y + 4}" width="16" height="15" rx="4" fill="${on ? '#FFB23F' : '#0A0D0C'}" opacity=".9"/><text x="${x + 12}" y="${y + 15}" font-size="10" text-anchor="middle" fill="${on ? '#1A0E04' : '#FFB23F'}">${id + 1}</text>
+      ${ww > 40 ? `<text x="${x + ww / 2}" y="${y0 + maxL * s + 16}" font-size="10" text-anchor="middle" fill="#5EC8E5">${fmt(b.a, 1)}×${b.mode === 'viga' ? fmt(b.b * 100, 0) + 'cm' : fmt(b.b, 1)}</text>
+      <text x="${x + ww / 2}" y="${y0 + maxL * s + 28}" font-size="9" text-anchor="middle" fill="#8D9892">${b.mode === 'vol' ? '' : (b.mode === 'viga' ? 'h ' : 'e ') + fmt(b.c * 100, 0) + ' cm'}</text>` : ''}</g>`;
+    x += ww + gap * s;
+  });
+  outViz(key, `<svg viewBox="0 0 ${W} ${H}"><defs>
+      <linearGradient id="top-${key}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9C0BC"/><stop offset="1" stop-color="#8E9692"/></linearGradient>
+      <pattern id="agg-${key}" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r=".8" fill="#00000030"/><circle cx="6.5" cy="7" r="1" fill="#00000024"/><circle cx="7" cy="2" r=".6" fill="#ffffff22"/></pattern></defs>${body}</svg>`);
+}
+function wallPattern(id, kind, model, pw, ph, g, x, y, key) {
+  if (kind === 'grelha') return `<pattern id="${id}" width="${pw}" height="${ph}" patternUnits="userSpaceOnUse" x="${x}" y="${y}">
+      <rect width="${pw}" height="${ph}" fill="#2a2f2d"/>
+      <svg width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" viewBox="0 0 100 100" preserveAspectRatio="none">${cobogo(model)}</svg></pattern>`;
+  return `<pattern id="${id}" width="${pw}" height="${ph * 2}" patternUnits="userSpaceOnUse" x="${x}" y="${y}">
+      <rect width="${pw}" height="${ph * 2}" fill="#3a2a1c"/>
+      <rect width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/>
+      <rect x="${-pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/>
+      <rect x="${pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/></pattern>`;
+}
+function drawWall(p, key) {
+  // tudo à escala real: a mesma escala na horizontal e na vertical
+  const W = 360, H = 210, pad = 22, IN = 92, WW = W - IN - 18;
+  const segs = p.segs.filter(s => s.w > 0.01 && s.h > 0.01), hl = hlIndex(key);
+  if (!segs.length) { outViz(key, ''); return; }
+  const sumW = segs.reduce((t, s) => t + s.w, 0), maxH = Math.max(...segs.map(s => s.h));
+  const s = Math.min((WW - pad * 2) / sumW, (H - pad * 2 - 30) / maxH);
+  const x0 = (WW - sumW * s) / 2 + 6, base = (H + maxH * s) / 2 - 4;
+  const g = p.j > 0 ? Math.max(.4, p.j * s) : .5;
+  const pid = 'pt-' + key;
+  let x = x0, body = '', dims = '';
+  segs.forEach((sg, i) => {
+    const ww = sg.w * s, hh = Math.max(1.5, sg.h * s), y = base - hh;
+    body += `<rect x="${x}" y="${y}" width="${ww}" height="${hh}" fill="url(#${pid})"/>`;
+    if (i > 0) body += `<line x1="${x}" y1="${y - 6}" x2="${x}" y2="${base}" stroke="#5EC8E5" stroke-width="1" stroke-dasharray="3 3"/>`;
+    if (sg.open > 0) {
+      const ohm = Math.min(2.1, sg.h * .9), oh = ohm * s, ow = Math.min(sg.open / ohm, sg.w * .7) * s;
+      body += `<rect x="${x + ww / 2 - ow / 2}" y="${base - oh}" width="${ow}" height="${oh}" fill="#0A0D0C" stroke="#5EC8E5" stroke-width="1.1" stroke-dasharray="4 3"/>`;
+    }
+    const id = Math.round(sg.idx);
+    if (hl >= 0 && id !== hl) body += `<rect x="${x}" y="${y}" width="${ww}" height="${hh}" fill="#0A0D0C" opacity=".6"/>`;
+    if (id === hl) body += `<rect x="${x - 1.5}" y="${y - 1.5}" width="${ww + 3}" height="${hh + 3}" fill="none" stroke="#FFB23F" stroke-width="3"/>`;
+    const ty = Math.min(y, base - 18) - (hh < 18 ? 4 : -4);
+    body += `<g ${MONO} font-size="10" font-weight="700"><rect x="${x + 2}" y="${hh < 18 ? ty - 15 : ty}" width="16" height="15" rx="4" fill="${id === hl ? '#FFB23F' : '#0A0D0C'}" opacity=".9"/><text x="${x + 10}" y="${(hh < 18 ? ty - 15 : ty) + 11}" text-anchor="middle" fill="${id === hl ? '#1A0E04' : '#FFB23F'}">${id + 1}</text></g>`;
+    if (ww > 30) dims += `<text x="${x + ww / 2}" y="${base + 24}" text-anchor="middle">${fmt(sg.w, 1)} m</text>`;
+    x += ww;
+  });
+  // lupa: 1 m × 1 m à escala real (a mesma para largura e altura)
+  const z = IN - 8, zx = W - IN - 6, zy = (H - IN) / 2 - 8;
+  const zpw = (p.bl + p.j) * z, zph = (p.bh + p.j) * z, zg = p.j > 0 ? Math.max(.8, p.j * z) : .8;
+  const piece = `${fmt(p.bl * 100, 0)}×${fmt(p.bh * 100, 0)} cm`;
+  outViz(key, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><defs>
+      <linearGradient id="bk-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB23F"/><stop offset="1" stop-color="#E0620F"/></linearGradient>
+      ${wallPattern(pid, p.pattern, p.model, (p.bl + p.j) * s, (p.bh + p.j) * s, g, x0, base, key)}
+      ${wallPattern(pid + 'z', p.pattern, p.model, zpw, zph, zg, 0, z, key)}</defs>
+    <rect x="${x0 - 5}" y="${base}" width="${sumW * s + 10}" height="5" rx="1" fill="#5B6561"/>${body}
+    <path d="M${x0} ${base + 12}H${x0 + sumW * s}" stroke="#5EC8E5" stroke-width="1"/>
+    <g ${MONO} font-size="10.5" font-weight="700" fill="#5EC8E5">${dims}
+      <text x="${x0 - 8}" y="${base - maxH * s / 2}" text-anchor="middle" transform="rotate(-90 ${x0 - 8} ${base - maxH * s / 2})" dy="-2">${fmt(maxH, 2)} m</text></g>
+    <g><rect x="${zx}" y="${zy}" width="${IN}" height="${IN}" rx="8" fill="#0A0D0C" stroke="#5EC8E5" stroke-width="1.2"/>
+      <svg x="${zx + 4}" y="${zy + 4}" width="${z}" height="${z}" viewBox="0 0 ${z} ${z}"><rect width="${z}" height="${z}" fill="url(#${pid}z)"/></svg>
+      <text x="${zx + IN / 2}" y="${zy + IN + 13}" ${MONO} font-size="9" font-weight="700" text-anchor="middle" fill="#5EC8E5">DETALHE 1 m × 1 m</text>
+      <text x="${zx + IN / 2}" y="${zy + IN + 25}" ${MONO} font-size="9" text-anchor="middle" fill="#8D9892">peça ${piece}</text></g></svg>`);
+}
+function lupaParts(p, key, W, H, IN) {
+  const pid = 'pt-' + key + 'z', z = IN - 8, zx = W - IN - 6, zy = (H - IN) / 2 - 8;
+  const zpw = (p.bl + p.j) * z, zph = (p.bh + p.j) * z, zg = p.j > 0 ? Math.max(.8, p.j * z) : .8;
+  const piece = `${fmt(p.bl * 100, 0)}×${fmt(p.bh * 100, 0)} cm`;
+  return { defs: wallPattern(pid, p.pattern, p.model, zpw, zph, zg, 0, z, key),
+    g: `<g><rect x="${zx}" y="${zy}" width="${IN}" height="${IN}" rx="8" fill="#0A0D0C" stroke="#5EC8E5" stroke-width="1.2"/>
+      <svg x="${zx + 4}" y="${zy + 4}" width="${z}" height="${z}" viewBox="0 0 ${z} ${z}"><rect width="${z}" height="${z}" fill="url(#${pid})"/></svg>
+      <text x="${zx + IN / 2}" y="${zy + IN + 13}" ${MONO} font-size="9" font-weight="700" text-anchor="middle" fill="#5EC8E5">DETALHE 1 m × 1 m</text>
+      <text x="${zx + IN / 2}" y="${zy + IN + 25}" ${MONO} font-size="9" text-anchor="middle" fill="#8D9892">peça ${piece}</text></g>` };
+}
+function drawFloor(p, key) {
+  const shapes = p.shapes.filter(sh => sh.pts.length >= 3 && Math.max(...sh.pts.map(q => q[0])) > .01 && Math.max(...sh.pts.map(q => q[1])) > .01), hl = hlIndex(key);
+  if (!shapes.length) { outViz(key, ''); return; }
+  const dims = shapes.map(sh => [Math.max(...sh.pts.map(q => q[0])), Math.max(...sh.pts.map(q => q[1]))]);
+  const gapM = Math.max(...dims.map(d => d[0])) * .15;
+  const totW = dims.reduce((t, d) => t + d[0], 0) + gapM * (shapes.length - 1), maxL = Math.max(...dims.map(d => d[1]));
+  const W = 300, s = W / (totW || 1), H = Math.max(40, maxL * s);
+  const tw = p.tl * s, th = p.tw * s, g = p.j > 0 ? Math.max(.3, p.j * s) : Math.min(.5, tw * .08);
+  let x = 0, body = '';
+  shapes.forEach((sh, i) => {
+    const [w, l] = dims[i], y = H - l * s, id = Math.round(sh.idx), on = id === hl;
+    const pts = sh.pts.map(q => [x + q[0] * s, y + q[1] * s]), ps = pts.map(q => q.map(v => v.toFixed(1)).join(',')).join(' ');
+    body += `<polygon points="${ps}" fill="url(#tile-${key})"/>${hl >= 0 && !on ? `<polygon points="${ps}" fill="#0A0D0C" opacity=".6"/>` : ''}<polygon points="${ps}" fill="none" stroke="${on ? '#FFB23F' : '#5EC8E5'}" stroke-width="${on ? 4 : 2}" stroke-linejoin="round"/>`;
+    // recortes: desenhados à escala, juntos no centro da área
+    const cx = pts.reduce((t, q) => t + q[0], 0) / pts.length, cy = pts.reduce((t, q) => t + q[1], 0) / pts.length;
+    const items = []; sh.cuts.forEach(c => { for (let n = 0; n < Math.min(c.q, 40); n++) items.push(c); });
+    if (items.length) {
+      const gap = 4, ws = items.map(c => Math.max(3, c.a * s)), tot = ws.reduce((t, v) => t + v, 0) + gap * (items.length - 1);
+      let cxx = cx - tot / 2;
+      items.forEach((c, n) => { const cw = ws[n], ch = Math.max(3, (c.circ ? c.a : c.b) * s);
+        body += c.circ ? `<circle cx="${cxx + cw / 2}" cy="${cy}" r="${cw / 2}" fill="#1f3a22" stroke="#FF6B5B" stroke-width="1.2" stroke-dasharray="3 2"/>`
+          : `<rect x="${cxx}" y="${cy - ch / 2}" width="${cw}" height="${ch}" fill="#0A0D0C" stroke="#FF6B5B" stroke-width="1.2" stroke-dasharray="3 2"/>`;
+        cxx += cw + gap; });
+    }
+    if (sh.lanc && sh.lanc.length) body += `<path d="${sh.lanc.map(si => { const a = pts[Math.round(si)], b = pts[(Math.round(si) + 1) % pts.length]; return a && b ? `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}` : ''; }).join('')}" fill="none" stroke="#E4E8E5" stroke-width="5" stroke-linecap="round"/>`;
+    body += `<rect x="${x + 5}" y="${y + 5}" width="18" height="18" rx="5" fill="${on ? '#FFB23F' : '#0A0D0C'}" opacity=".9"/><text x="${x + 14}" y="${y + 18}" ${MONO} font-size="12" font-weight="700" text-anchor="middle" fill="${on ? '#1A0E04' : '#FFB23F'}">${id + 1}</text>`;
+    x += w * s + gapM * s;
+  });
+  outViz(key, `<svg viewBox="-3 -3 ${W + 6} ${H + 6}"><defs><linearGradient id="fl-${key}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB23F"/><stop offset="1" stop-color="#C85210"/></linearGradient>
+    <pattern id="tile-${key}" width="${tw + g}" height="${th + g}" patternUnits="userSpaceOnUse"><rect width="${tw + g}" height="${th + g}" fill="#2b1f15"/><rect width="${tw}" height="${th}" rx="${Math.min(2, tw / 6)}" fill="url(#fl-${key})"/></pattern></defs>${body}</svg>`);
+}
+
+/* ================= 3D com rotação (arrastar) e zoom ================= */
+const ORB = {};
+const ORB_DEF = { yaw: 40, pitch: 32, zoom: 1, px: 0, py: 0 };
+const ZMAX = 250, ZMIN = .4;
+const orb = k => ORB[k] || (ORB[k] = { ...ORB_DEF });
+const CEN = {};
+function makeProj(k, B, W, H, cx0) {
+  const o = orb(k), th = o.yaw * Math.PI / 180, ph = o.pitch * Math.PI / 180;
+  const ct = Math.cos(th), st = Math.sin(th), sp = Math.sin(ph), cp = Math.cos(ph);
+  const cx = (B[0] + B[3]) / 2, cy = (B[1] + B[4]) / 2, cz = (B[2] + B[5]) / 2;
+  const diag = Math.hypot(B[3] - B[0], B[4] - B[1], B[5] - B[2]) || 1;
+  const sc = Math.min(W * .95, H * 1.5) / diag * o.zoom;
+  const ox = cx0 + (o.px || 0), oy = H / 2 + (o.py || 0);
+  const P = (x, y, z) => { const X = x - cx, Y = y - cy, Z = z - cz, xr = X * ct - Y * st, yr = X * st + Y * ct; return [ox + xr * sc, oy + (yr * sp - Z * cp) * sc, yr * cp + Z * sp]; };
+  const vis = (nx, ny, nz) => (nx * st + ny * ct) * cp + nz * sp > 1e-6;
+  // matriz do padrão para uma face vertical com direcção horizontal (dx,dy) a partir do ponto O
+  const mtx = (dx, dy, O) => { const o2 = P(...O); return `matrix(${sc * (dx * ct - dy * st)} ${sc * (dx * st + dy * ct) * sp} 0 ${-sc * cp} ${o2[0]} ${o2[1]})`; };
+  const shade = (nx, ny, nz) => { const L = [-.45, .55, .7], d = nx * L[0] + ny * L[1] + nz * L[2]; return Math.max(0, .42 - d * .42); };
+  CEN[k] = [cx0, H / 2];
+  return { P, vis, mtx, shade, sc };
+}
+function boxFaces(b) {
+  const [x0, y0, z0, x1, y1, z1] = b;
+  return [
+    { n: [0, 0, 1], pts: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], top: 1 },
+    { n: [0, -1, 0], pts: [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], dir: [1, 0], O: [x0, y0, z0] },
+    { n: [0, 1, 0], pts: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], dir: [1, 0], O: [x0, y1, z0] },
+    { n: [-1, 0, 0], pts: [[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], dir: [0, 1], O: [x0, y0, z0] },
+    { n: [1, 0, 0], pts: [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], dir: [0, 1], O: [x1, y0, z0] }];
+}
+const HINT3D = (W, H) => `<text x="10" y="${H - 8}" ${MONO} font-size="9" fill="#5B6561">arraste = girar · 2 dedos = zoom/mover · 2 toques = aproximar</text>`;
+function drawWall3D(p, key) {
+  const W = 360, H = 210, IN = 92, WW = W - IN - 14;
+  const segs = p.segs.filter(s => s.w > 0.01 && s.h > 0.01), hl = hlIndex(key);
+  if (!segs.length) { outViz(key, ''); return; }
+  const t = p.th || .15;
+  const span = Math.max(...segs.map(s => s.perim ? Math.max(s.pa, s.pb) : s.w));
+  const gapM = span * .15;
+  let ox = 0; const walls = [], grounds = [];
+  segs.forEach(sg => {
+    const id = Math.round(sg.idx);
+    if (sg.perim) {
+      const A = sg.pa, B = sg.pb, sd = sg.sides || '';
+      grounds.push({ x: ox, A, B, id });
+      if (sd.includes('T')) walls.push({ ax: 'x', x: ox, y: 0, len: A, h: sg.h, id });
+      if (sd.includes('E')) walls.push({ ax: 'y', x: ox, y: 0, len: B, h: sg.h, id });
+      if (sd.includes('D')) walls.push({ ax: 'y', x: ox + A, y: 0, len: B, h: sg.h, id });
+      if (sd.includes('F')) walls.push({ ax: 'x', x: ox, y: B, len: A, h: sg.h, id });
+      ox += A + gapM;
+    } else { walls.push({ ax: 'x', x: ox, y: 0, len: sg.w, h: sg.h, id }); ox += sg.w + gapM; }
+  });
+  const box = w => w.ax === 'x' ? [w.x, w.y - t / 2, 0, w.x + w.len, w.y + t / 2, w.h] : [w.x - t / 2, w.y, 0, w.x + t / 2, w.y + w.len, w.h];
+  const B = [Infinity, Infinity, 0, -Infinity, -Infinity, 0];
+  walls.forEach(w => { const b = box(w); for (let i = 0; i < 3; i++) { B[i] = Math.min(B[i], b[i]); B[i + 3] = Math.max(B[i + 3], b[i + 3]); } });
+  grounds.forEach(g => { B[0] = Math.min(B[0], g.x); B[1] = Math.min(B[1], 0); B[3] = Math.max(B[3], g.x + g.A); B[4] = Math.max(B[4], g.B); });
+  const zoomed = orb(key).zoom > 2.2;
+  const pr = makeProj(key, B, WW, H, WW / 2 + 4);
+  const poly = arr => arr.map(q => { const r = pr.P(...q); return r[0].toFixed(1) + ',' + r[1].toFixed(1); }).join(' ');
+  const pw = p.bl + p.j, ph = p.bh + p.j, gm = p.j > 0 ? p.j : Math.min(.004, p.bl * .03);
+  let defs = '', body = '';
+  grounds.forEach(g => {
+    const dim = hl >= 0 && g.id !== hl;
+    body += `<polygon points="${poly([[g.x, 0, 0], [g.x + g.A, 0, 0], [g.x + g.A, g.B, 0], [g.x, g.B, 0]])}" fill="rgba(94,200,229,${dim ? .03 : .09})" stroke="#5EC8E5" stroke-width="1" stroke-dasharray="4 3"/>`;
+    const fc = pr.P(g.x + g.A / 2, g.B + g.B * .06, 0);
+    body += `<text x="${fc[0]}" y="${fc[1] + 4}" ${MONO} font-size="9" font-weight="700" text-anchor="middle" fill="#5EC8E5">FRENTE</text>`;
+  });
+  const faces = [];
+  walls.forEach(w => boxFaces(box(w)).forEach(f => { if (pr.vis(...f.n)) faces.push({ f, w, d: f.pts.reduce((t, q) => t + pr.P(...q)[2], 0) / 4 }); }));
+  faces.sort((a, b) => a.d - b.d);
+  faces.forEach(({ f, w }, i) => {
+    const dim = hl >= 0 && w.id !== hl, on = w.id === hl;
+    const pts = poly(f.pts);
+    let fill;
+    if (f.top) fill = '#A9B0AC';
+    else if ((w.ax === 'x' && f.dir[0]) || (w.ax === 'y' && f.dir[1])) {
+      const pid = `p3-${key}-${i}`;
+      defs += wallPattern(pid, p.pattern, p.model, pw, ph, gm, 0, 0, key).replace(`<pattern id="${pid}"`, `<pattern id="${pid}" patternTransform="${pr.mtx(f.dir[0], f.dir[1], f.O)}"`);
+      fill = `url(#${pid})`;
+    } else fill = p.pattern === 'grelha' ? '#7d8581' : '#b8561a';
+    const sh = f.top ? 0 : pr.shade(...f.n);
+    body += `<g opacity="${dim ? .28 : 1}"><polygon points="${pts}" fill="${fill}"/>${sh > .02 ? `<polygon points="${pts}" fill="#000" opacity="${sh.toFixed(2)}"/>` : ''}${on && f.top ? `<polygon points="${pts}" fill="none" stroke="#FFB23F" stroke-width="2.5"/>` : ''}</g>`;
+  });
+  const seen = new Set();
+  walls.forEach(w => {
+    if (seen.has(w.id)) return; seen.add(w.id);
+    const g = grounds.find(q => q.id === w.id);
+    const c = g ? pr.P(g.x + g.A / 2, g.B / 2, 0) : pr.P(w.x + w.len / 2, w.y, w.h);
+    const on = w.id === hl;
+    body += `<g ${MONO} font-size="10" font-weight="700"><rect x="${c[0] - 8}" y="${c[1] - 20}" width="16" height="15" rx="4" fill="${on ? '#FFB23F' : '#0A0D0C'}" opacity=".9"/><text x="${c[0]}" y="${c[1] - 9}" text-anchor="middle" fill="${on ? '#1A0E04' : '#FFB23F'}">${w.id + 1}</text></g>`;
+  });
+  const lp = lupaParts(p, key, W, H, IN);
+  outViz(key, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="overflow:hidden"><defs>
+      <linearGradient id="bk-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB23F"/><stop offset="1" stop-color="#E0620F"/></linearGradient>${defs}${lp.defs}</defs>
+    ${body}${HINT3D(W, H)}${zoomed ? '' : lp.g}</svg>`);
+}
+function drawBoxes(p, key) {
+  const W = 360, H = 210;
+  const boxes = p.boxes.filter(b => b.a > 0 && b.b > 0 && b.c > 0), hl = hlIndex(key);
+  if (!boxes.length) { outViz(key, ''); return; }
+  const m = Math.max(...boxes.map(b => Math.max(b.a, b.b, b.c)));
+  let ox = 0; const solids = [];
+  boxes.forEach(b => { const c = Math.max(b.c, m * .012), bb = Math.max(b.b, m * .012); solids.push({ b, box: [ox, 0, 0, ox + b.a, bb, c] }); ox += b.a + m * .18; });
+  const B = [0, 0, 0, ox - m * .18, Math.max(...solids.map(s => s.box[4])), Math.max(...solids.map(s => s.box[5]))];
+  const pr = makeProj(key, B, W, H, W / 2);
+  const poly = arr => arr.map(q => { const r = pr.P(...q); return r[0].toFixed(1) + ',' + r[1].toFixed(1); }).join(' ');
+  const faces = [];
+  solids.forEach(s => boxFaces(s.box).forEach(f => { if (pr.vis(...f.n)) faces.push({ f, s, d: f.pts.reduce((t, q) => t + pr.P(...q)[2], 0) / 4 }); }));
+  faces.sort((a, b) => a.d - b.d);
+  let body = '';
+  faces.forEach(({ f, s }) => {
+    const id = Math.round(s.b.idx), on = id === hl, dim = hl >= 0 && !on, pts = poly(f.pts);
+    const sh = f.top ? 0 : pr.shade(...f.n);
+    body += `<g opacity="${dim ? .3 : 1}"><polygon points="${pts}" fill="${f.top ? `url(#top-${key})` : '#8A928E'}"/><polygon points="${pts}" fill="url(#agg-${key})"/>${sh > .02 ? `<polygon points="${pts}" fill="#000" opacity="${sh.toFixed(2)}"/>` : ''}
+      ${f.top ? `<polygon points="${pts}" fill="none" stroke="${on ? '#FFB23F' : '#FF7A1A'}" stroke-width="${on ? 3 : 1.3}"/>` : ''}</g>`;
+  });
+  solids.forEach(s => {
+    const id = Math.round(s.b.idx), on = id === hl, [x0, y0, , x1, y1, z1] = s.box, c = pr.P((x0 + x1) / 2, (y0 + y1) / 2, z1);
+    body += `<circle cx="${c[0]}" cy="${c[1]}" r="${on ? 11 : 9}" fill="${on ? '#FFB23F' : '#0A0D0C'}" opacity=".9"/><text x="${c[0]}" y="${c[1] + 4}" ${MONO} font-size="11" font-weight="700" text-anchor="middle" fill="${on ? '#1A0E04' : '#FFB23F'}">${id + 1}</text>`;
+  });
+  outViz(key, `<svg viewBox="0 0 ${W} ${H}" style="overflow:hidden"><defs>
+      <linearGradient id="top-${key}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9C0BC"/><stop offset="1" stop-color="#8E9692"/></linearGradient>
+      <pattern id="agg-${key}" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r=".8" fill="#00000030"/><circle cx="6.5" cy="7" r="1" fill="#00000024"/><circle cx="7" cy="2" r=".6" fill="#ffffff22"/></pattern></defs>${body}${HINT3D(W, H)}</svg>`);
+}
+/* pavê em 3D: gira-se a própria planta com CSS */
+const floorTf = k => { const o = orb(k); return `translate(${o.px || 0}px, ${o.py || 0}px) perspective(900px) rotateX(${90 - o.pitch}deg) rotateZ(${o.yaw - 80}deg) scale(${o.zoom})`; };
+function applyFloorOrbit(k) { const el = $('viz-' + k); if (el) el.style.transform = VIEW[k] === '3d' ? floorTf(k) : ''; }
+
+/* ================= cálculos ================= */
+function areaOf(k, r) {
+  const kind = CFG[k].kind;
+  if (kind === 'wall') { const g = r.mode === 'dim' ? pf(r.a) * pf(r.b) : r.mode === 'perim' ? perimLen(r) * pf(r.h) : pf(r.m); return { gross: g, net: Math.max(0, g - pf(r.d)) }; }
+  if (kind === 'floor') { const g = floorGeom(r), c = cutsArea(r); return { gross: g.area, net: Math.max(0, g.area - c), perim: g.noPerim ? 0 : g.perim, cuts: c, lanc: lancilLen(r) }; }
+  const q = Math.max(1, Math.round(pf(r.q) || 1));
+  let v = 0;
+  if (r.mode === 'laje') v = pf(r.a) * pf(r.b) * pf(r.c) / 100 * q;
+  else if (r.mode === 'viga') v = pf(r.a) * pf(r.b) / 100 * pf(r.c) / 100 * q;
+  else v = pf(r.v);
+  return { gross: v, net: v };
+}
+function areaLine(k, r, i) {
+  const n = r.name || `${CFG[k].kind === 'slab' ? 'Peça' : 'Área'} ${i + 1}`, a = areaOf(k, r);
+  const kind = CFG[k].kind;
+  if (kind === 'slab') {
+    const q = Math.max(1, Math.round(pf(r.q) || 1)), qt = q > 1 ? ` × ${q}` : '';
+    if (r.mode === 'laje') return `• ${n}: ${fmt(pf(r.a))} × ${fmt(pf(r.b))} m × ${fmt(pf(r.c))} cm${qt} = ${fmt(a.net, 3)} m³`;
+    if (r.mode === 'viga') return `• ${n}: ${fmt(pf(r.a))} m × ${fmt(pf(r.b))} × ${fmt(pf(r.c))} cm${qt} = ${fmt(a.net, 3)} m³`;
+    return `• ${n}: ${fmt(a.net, 3)} m³`;
+  }
+  if (r.mode === 'perim') { const sd = r.sides ?? 'FTED'; return `• ${n}: terreno ${fmt(pf(r.pa))} × ${fmt(pf(r.pb))} m, ${sd.length} ${sd.length === 1 ? 'lado' : 'lados'} (${[...sd].map(c => SIDE_NAMES[c]).join(', ')}) = ${fmt(perimLen(r))} m × ${fmt(pf(r.h))} m${pf(r.d) > 0 ? ' − ' + fmt(pf(r.d)) : ''} = ${fmt(a.net)} m²`; }
+  if (kind === 'floor') {
+    const shp = r.mode === 'forma' ? `${SHAPES[r.shape || 'trap'].name} (${SHAPES[r.shape || 'trap'].f.map(([fl, l]) => l.toLowerCase() + ' ' + fmt(pf(r[fl]))).join(', ')})` : r.mode === 'desenho' ? `desenho com ${(r.pts || []).length} cantos` : r.mode === 'area' ? `${fmt(pf(r.m))} m²` : `${fmt(pf(r.a))} × ${fmt(pf(r.b))}`;
+    const cs = (r.cuts || []).filter(c => cutArea(c) > 0).map(c => `${Math.round(pf(c.q))}× ${(CUTS[c.t] || CUTS.outro).name.toLowerCase()}`).join(', ');
+    return `• ${n}: ${shp} = ${fmt(a.gross)} m²${a.cuts > 0 ? ` − recortes (${cs}) ${fmt(a.cuts)} m²` : ''} → ${fmt(a.net)} m²`;
+  }
+  const dim = r.mode === 'dim' ? `${fmt(pf(r.a))} × ${fmt(pf(r.b))}` : `${fmt(pf(r.m))} m²`;
+  const d = kind === 'wall' && pf(r.d) > 0 ? ` − ${fmt(pf(r.d))}` : '';
+  return `• ${n}: ${dim}${d} = ${fmt(a.net)} m²`;
+}
+function calcPieces(k) {
+  const c = CFG[k], s = S[k];
+  const prod = allProducts(k).find(p => p.id === s.sel) || allProducts(k)[0];
+  const byM2 = prod.id === 'free' || (prod.pm2 && !(prod.L && prod.W));
+  const j = !byM2 && s.junta === 'com' ? pf(s.j) * (c.jUnit === 'cm' ? .01 : .001) : 0;
+  const PL = prod.model ? pf(s.gw) / 100 : prod.L, PW = prod.model ? pf(s.gh) / 100 : prod.W;
+  const gtxt = `${fmt(pf(s.gw))}×${fmt(pf(s.gh))}`;
+  const pm2 = prod.id === 'free' ? pf(s.free) : byM2 ? pf(prod.pm2) : 1 / ((PL + j) * (PW + j));
+  const per = s.areas.map(r => areaOf(k, r));
+  const net = per.reduce((t, a) => t + a.net, 0), gross = per.reduce((t, a) => t + a.gross, 0);
+  const base = net * pm2, perda = pf(s.perda);
+  const total = Math.ceil(base * (1 + perda / 100));
+  const preco = pf(s.preco);
+  const rows = [];
+  s.areas.forEach((r, i) => rows.push([`${i + 1}. ${r.name || 'Área ' + (i + 1)}`, per[i].net, 2, ' m²']));
+  rows.push(['Área total', net, 2, ' m²', 1], [`${c.piece[0].toUpperCase() + c.piece.slice(1)} por m²`, pm2, 1, ''], ['Sem perdas', Math.ceil(base), 0, ' ' + c.piece]);
+  let mortarTxt = '';
+  if (c.mortar && j > 0 && prod.L) {
+    const esp = prod.t || .15;
+    const arg = net * Math.max(0, 1 - pm2 * prod.L * prod.W) * esp;
+    const seco = arg * 1.3 * 1.3, cimKg = seco / 7 * 1440, areia = seco * 6 / 7, sacos = Math.ceil(cimKg / 50);
+    rows.push(['Cimento p/ assentar', sacos, 0, ' sacos', 1], ['Areia p/ assentar', areia, 2, ' m³', 1]);
+    mortarTxt = `\nCimento p/ assentar: ${sacos} sacos · Areia: ${fmt(areia)} m³`;
+  }
+  let extraTxt = '';
+  if (c.kind === 'floor') {
+    const cutsT = per.reduce((t, a) => t + (a.cuts || 0), 0), perimT = per.reduce((t, a) => t + (a.perim || 0), 0);
+    if (cutsT > 0) rows.splice(rows.length - 3, 0, ['Recortes descontados', cutsT, 2, ' m²']);
+    const areia = net * pf(s.areiaEsp) / 100 * (1 + perda / 100);
+    if (perimT > 0) rows.push(['Perímetro (contorno)', perimT, 2, ' m']);
+    const lancT = per.reduce((t, a) => t + (a.lanc || 0), 0);
+    if (s.lancil === 'com' && lancT > 0 && pf(s.lancilLen) > 0) { const nl = Math.ceil(lancT / pf(s.lancilLen) * (1 + perda / 100)); rows.push(['Lancil: lados escolhidos', lancT, 2, ' m'], [`Lancil (peças de ${fmt(pf(s.lancilLen))} m)`, nl, 0, ' un', 1]); extraTxt += `\nLancil: ${nl} peças de ${fmt(pf(s.lancilLen))} m (${fmt(lancT)} m nos lados escolhidos)`; }
+    if (pf(s.areiaEsp) > 0) { rows.push([`Areia de assentamento (${fmt(pf(s.areiaEsp))} cm)`, areia, 2, ' m³', 1]); extraTxt += `\nAreia de assentamento: ${fmt(areia)} m³`; }
+  }
+  // pavê: o preço é por m² — paga-se a área a comprar (área × perdas); os outros são por peça
+  const m2buy = c.kind === 'floor' ? net * (1 + perda / 100) : 0;
+  const valor = preco > 0 ? (c.kind === 'floor' ? m2buy * preco : total * preco) : 0;
+  if (c.kind === 'floor' && net > 0) rows.push(['m² a comprar (c/ perdas)', m2buy, 2, ' m²', 1]);
+  if (preco > 0) rows.push([c.kind === 'floor' ? `Valor (${fmt(preco)} MT/m²)` : 'Valor', valor, 2, ' MT', 1]);
+  const pname = prod.id === 'free' ? `${c.piece} (${fmt(pm2, 1)}/m²)` : prod.name;
+  const jtxt = byM2 ? `${fmt(pm2, 1)} ${c.piece}/m²` : (j > 0 ? `junta ${fmt(pf(s.j))} ${c.jUnit}` : 'sem junta');
+  const text = `*${c.kind === 'floor' ? 'Pavê' : c.pattern === 'grelha' ? 'Cobogós' : 'Blocos'} — ${prod.id === 'free' ? fmt(pm2, 1) + '/m²' : prod.name + (prod.model ? ` ${gtxt} cm` : '')}*\n` +
+    s.areas.map((r, i) => areaLine(k, r, i)).join('\n') +
+    `\nTotal: ${fmt(net)} m² · ${jtxt} · perdas ${fmt(perda)}%\n➡️ *${total.toLocaleString('pt-PT')} ${c.piece}*` + mortarTxt + extraTxt + (c.kind === 'floor' && net > 0 ? `\nm² a comprar: ${fmt(m2buy)} m²` : '') + (preco > 0 ? `\nValor: ${fmtFix(valor, 2)} MT` + (c.kind === 'floor' ? ` (${fmt(preco)} MT/m²)` : '') : '');
+  const nA = s.areas.length;
+  let viz;
+  if (c.kind === 'wall') viz = { th: c.pattern === 'grelha' ? .1 : (prod.t || .15), pattern: c.pattern, model: prod.model || 'quad', bl: PL || Math.sqrt(1 / Math.max(pm2, .1)), bh: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
+    segs: s.areas.map((r, i) => { const g = per[i].gross;
+      if (r.mode === 'perim') return { idx: i, w: perimLen(r), h: pf(r.h), open: Math.min(pf(r.d), g * .6), areaMode: 0, perim: 1, pa: pf(r.pa), pb: pf(r.pb), sides: r.sides ?? 'FTED' };
+      const am = r.mode !== 'dim'; const h = am ? Math.min(2.4, Math.max(.4, Math.sqrt(g / 3))) : pf(r.b); return { idx: i, w: am ? (h ? g / h : 0) : pf(r.a), h, open: Math.min(pf(r.d), g * .6), areaMode: am ? 1 : 0 }; }) };
+  else viz = { tl: PL || Math.sqrt(1 / Math.max(pm2, .1)), tw: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
+    shapes: s.areas.map((r, i) => ({ idx: i, pts: floorGeom(r).pts, lanc: s.lancil === 'com' ? (() => { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.flatMap((e, j) => on[j] ? e.segs : []); })() : [], cuts: (r.cuts || []).map(c => ({ circ: (CUTS[c.t] || {}).circ ? 1 : 0, a: pf(c.a), b: pf(c.b), q: Math.max(0, Math.round(pf(c.q))) })) })) };
+  return {
+    value: total, unit: c.piece, label: c.label, tag: `+${fmt(perda)}% perdas`,
+    sub: `<span><b>${nA}</b> ${nA === 1 ? 'área' : 'áreas'}</span><span><b>${fmt(net, 1)}</b> m²</span><span><b>${fmt(pm2, 1)}</b> /m²</span><span>${esc(prod.id === 'free' ? 'por m²' : prod.name + (prod.model ? ` ${gtxt}` : ''))}</span>`,
+    price: valor, rows, text, viz, per, total: net, gross, byM2, pm2, prod
+  };
+}
+function calcSlab(k) {
+  const s = S[k];
+  const per = s.areas.map(r => areaOf(k, r));
+  const vol = per.reduce((t, a) => t + a.net, 0);
+  const [ci, ar, br] = s.traco.split(',').map(Number);
+  const perda = pf(s.perda), vT = vol * (1 + perda / 100);
+  const seco = vT * 1.54, soma = ci + ar + br;
+  const cimKg = seco * ci / soma * 1440, areia = seco * ar / soma, brita = seco * br / soma, agua = cimKg * .5;
+  const sacos = Math.ceil(cimKg / 50), preco = pf(s.preco);
+  const rows = s.areas.map((r, i) => [`${i + 1}. ${r.name || 'Peça ' + (i + 1)}`, per[i].net, 3, ' m³']);
+  rows.push(['Volume total', vol, 3, ' m³', 1], ['Com perdas', vT, 3, ' m³'], ['Cimento', cimKg, 0, ' kg'], ['Areia', areia, 2, ' m³', 1], ['Brita', brita, 2, ' m³', 1], ['Água (aprox.)', agua, 0, ' L']);
+  if (preco > 0) rows.push(['Valor do cimento', sacos * preco, 2, ' MT', 1]);
+  const nA = s.areas.length;
+  return {
+    value: sacos, unit: 'sacos', label: CFG[k].label, tag: `traço ${ci}:${ar}:${br}`,
+    sub: `<span><b>${nA}</b> ${nA === 1 ? 'peça' : 'peças'}</span><span><b>${fmt(vT, 2)}</b> m³ c/ perdas</span><span>areia <b>${fmt(areia, 2)}</b> m³</span><span>brita <b>${fmt(brita, 2)}</b> m³</span>`,
+    price: preco > 0 ? sacos * preco : 0, rows,
+    text: `*Betão traço ${ci}:${ar}:${br}*\n` + s.areas.map((r, i) => areaLine(k, r, i)).join('\n') + `\nTotal: ${fmt(vT, 2)} m³ (com perdas ${fmt(perda)}%)\n➡️ *${sacos} sacos de cimento*\nAreia: ${fmt(areia)} m³\nBrita: ${fmt(brita)} m³\nÁgua: ~${fmt(agua, 0)} L` + (preco > 0 ? `\nCimento: ${fmtFix(sacos * preco, 2)} MT` : ''),
+    viz: { boxes: s.areas.map((r, i) => { if (r.mode === 'vol') { const e = Math.cbrt(Math.max(pf(r.v), .001)); return { idx: i, a: e, b: e, c: e, mode: 'vol' }; } return { idx: i, a: pf(r.a), b: r.mode === 'viga' ? pf(r.b) / 100 : pf(r.b), c: pf(r.c) / 100, mode: r.mode }; }) },
+    per, total: vol
+  };
+}
+
+/* ================= actualização ================= */
+let heroTimer = null;
+const maxSeen = {};
+function paintHero(r, key) {
+  $('h-label').textContent = r.label; $('h-unit').textContent = r.unit; $('h-tag').textContent = r.tag;
+  $('dockLabel').textContent = r.label; $('dockUnit').textContent = r.unit;
+  $('h-sub').innerHTML = r.sub;
+  $('h-price').hidden = !(r.price > 0);
+  if (r.price > 0) countTo($('h-price-v'), r.price, 2, ' MT');
+  maxSeen[key] = Math.max(maxSeen[key] || 1, r.value * 1.25, 1);
+  $('h-meter').style.transform = `scaleX(${Math.min(1, r.value / maxSeen[key])})`;
+  setOdo(r.value);
+  const h = $('hero'); h.classList.remove('bump'); void h.offsetWidth; h.classList.add('bump');
+}
+function updateSec(k) {
+  const c = CFG[k], s = S[k];
+  const r = c.kind === 'slab' ? calcSlab(k) : calcPieces(k);
+  results[k] = r;
+  if (c.kind !== 'slab') {
+    const free = s.sel === 'free';
+    $(k + '-freebox').classList.toggle('closed', !free);
+    $(k + '-juntabox').classList.toggle('closed', r.byM2);
+    const jf = $(k + '-jfield'); jf.style.opacity = !r.byM2 && s.junta === 'com' ? 1 : .3; $(k + '-j').disabled = r.byM2 || s.junta !== 'com';
+    if ($(k + '-llfield')) { $(k + '-llfield').style.opacity = s.lancil === 'com' ? 1 : .35; }
+    $(k + '-rate').innerHTML = r.byM2 ? `Cálculo directo: <b>${fmt(r.pm2, 1)} ${c.piece}/m²</b> (junta já incluída)` : `Pela medida da peça: <b>${fmt(r.pm2, 2)} ${c.piece}/m²</b>`;
+    tweenViz(k, r.viz, DRAW[c.kind]);
+  } else tweenViz(k, r.viz, drawSlab);
+  s.areas.forEach((a, i) => countTo(document.querySelector(`[data-sub="${a.id}"]`), r.per[i].net, c.kind === 'slab' ? 3 : 2, c.kind === 'slab' ? ' m³' : ' m²'));
+  const n = s.areas.length;
+  $('tn-' + k).textContent = `${n} ${c.kind === 'slab' ? (n === 1 ? 'peça' : 'peças') : (n === 1 ? 'área' : 'áreas')} · total`;
+  countTo($('tt-' + k), r.total, c.kind === 'slab' ? 3 : 2, c.kind === 'slab' ? ' m³' : ' m²');
+  $('vt-' + k).textContent = fmt(r.total, c.kind === 'slab' ? 2 : 1);
+  renderRows('det-' + k, r.rows);
+}
+function update(k, immediate) {
+  (k ? [k] : TABS).forEach(updateSec);
+  clearTimeout(heroTimer);
+  if (tab === 'simples') return;
+  if (immediate) paintHero(results[tab], tab); else heroTimer = setTimeout(() => paintHero(results[tab], tab), 160);
+}
+
+function syncGs(k) { const b = $('gsizes'); if (!b) return; b.querySelectorAll('[data-gs]').forEach(x => x.setAttribute('aria-pressed', pf(S[k].gw) == +x.dataset.gs && pf(S[k].gh) == +x.dataset.gs)); }
+/* ================= MODO SIMPLES: espaço + peça + junta ================= */
+const SQ = Object.assign({ modo: 'dim', a: '', b: '', m: '', pl: '', pw: '', j: 0, perda: 5, preco: '', pmode: 'peca' }, store.get('qo-simple', {}), { a: '', b: '', m: '' });
+const PIECES = [['40', '20', 'Bloco 40×20'], ['20', '10', 'Pavê 20×10'], ['20', '20', '20×20'], ['30', '30', '30×30'], ['40', '40', '40×40'], ['60', '60', '60×60']];
+const JUNTAS = [[0, 'Sem junta'], [2, '2 mm'], [3, '3 mm'], [5, '5 mm'], [10, '1 cm'], [15, '1,5 cm']];
+function simpleHTML() {
+  const nq = (id, label, unit, ph, step) => `<label class="field"><span>${label}</span>${numIn('sq-' + id, SQ[id] ?? '', unit, step || 0, ph, `data-q="${id}"`)}</label>`;
+  return `<section class="sec" id="sec-simples" hidden>
+    <div class="sec-head" style="--i:0"><h2>Cálculo <em>rápido</em></h2><p>Espaço, peça e junta. Só isso.</p></div>
+    <div class="card viz" style="--i:1"><div class="viz-stage"><div id="viz-simples" style="width:100%;height:100%"></div></div>
+      <div class="viz-foot"><span>Vista do espaço</span><span><b id="vt-simples">0</b> m²</span></div></div>
+    <div class="card" style="--i:2">
+      <div class="card-title"><i>01</i>Tamanho do espaço</div>
+      <div class="qseg" data-qgroup="modo"><button data-qv="dim" aria-pressed="${SQ.modo === 'dim'}">Comprimento × largura</button><button data-qv="area" aria-pressed="${SQ.modo === 'area'}">Já sei os m²</button></div>
+      <div class="reveal${SQ.modo === 'dim' ? '' : ' closed'}" id="sq-dim"><div><div class="fields">${nq('a', 'Comprimento', 'm', '10', .5)}${nq('b', 'Largura / altura', 'm', '6', .5)}</div></div></div>
+      <div class="reveal${SQ.modo === 'area' ? '' : ' closed'}" id="sq-area"><div>${nq('m', 'Área', 'm²', '60', 1)}</div></div>
+    </div>
+    <div class="card" style="--i:3">
+      <div class="card-title"><i>02</i>Tamanho da peça</div>
+      <div class="fields">${nq('pl', 'Comprimento', 'cm', '20', 1)}${nq('pw', 'Largura / altura', 'cm', '10', 1)}</div>
+      <div class="chips" id="sq-pieces">${PIECES.map(([l, w, n]) => `<button class="chip" data-qpiece="${l}x${w}" aria-pressed="${SQ.pl == l && SQ.pw == w}"><b>${n}</b><small>${l}×${w} cm</small></button>`).join('')}</div>
+    </div>
+    <div class="card" style="--i:4">
+      <div class="card-title"><i>03</i>Junta entre peças</div>
+      <div class="chips" id="sq-juntas">${JUNTAS.map(([v, n]) => `<button class="chip" data-qj="${v}" aria-pressed="${+SQ.j === v}"><b>${n}</b><small>${v ? 'entre peças' : 'encostadas'}</small></button>`).join('')}</div>
+      <div class="fields">${nq('j', 'Junta (outra medida)', 'mm', '0', 1)}${nq('perda', 'Perdas', '%', '5', 1)}</div>
+      <div class="qseg" data-qgroup="pmode"><button data-qv="peca" aria-pressed="${SQ.pmode === 'peca'}">Preço por peça</button><button data-qv="m2" aria-pressed="${SQ.pmode === 'm2'}">Preço por m²</button></div>
+      ${nq('preco', 'Preço (opcional)', 'MT', '38', 0)}
+    </div>
+    <div class="card" style="--i:5">
+      <div class="card-title"><i>04</i>Resumo</div>
+      <div class="rows" id="det-simples"></div>
+      ${shareBtns('simples')}
+      <p class="note">Cálculo: peças por m² = 1 ÷ ((comprimento + junta) × (largura + junta)). Confirme sempre em obra.</p>
+    </div>
+  </section>`;
+}
+function calcSimple() {
+  const area = SQ.modo === 'dim' ? pf(SQ.a) * pf(SQ.b) : pf(SQ.m);
+  const L = pf(SQ.pl) / 100, W = pf(SQ.pw) / 100, j = pf(SQ.j) / 1000, perda = pf(SQ.perda), preco = pf(SQ.preco);
+  const pm2 = L > 0 && W > 0 ? 1 / ((L + j) * (W + j)) : 0;
+  const base = area * pm2, total = Math.ceil(base * (1 + perda / 100)), m2buy = area * (1 + perda / 100);
+  const valor = preco > 0 ? (SQ.pmode === 'm2' ? m2buy * preco : total * preco) : 0;
+  const rows = [['Área do espaço', area, 2, ' m²'], ['Peças por m²', pm2, 2, ''], ['Sem perdas', Math.ceil(base), 0, ' peças'], [`Com ${fmt(perda)}% de perdas`, total, 0, ' peças', 1]];
+  if (SQ.pmode === 'm2') rows.push(['m² a comprar', m2buy, 2, ' m²']);
+  if (valor > 0) rows.push(['Valor', valor, 2, ' MT', 1]);
+  const peca = L && W ? `${fmt(L * 100)}×${fmt(W * 100)} cm` : '—';
+  const jt = j > 0 ? `junta ${fmt(j * 1000)} mm` : 'sem junta';
+  const ready = area > 0 && pm2 > 0;
+  return {
+    value: total, unit: 'peças', label: 'Peças necessárias', tag: `+${fmt(perda)}% perdas`,
+    sub: ready ? `<span><b>${fmt(area, 2)}</b> m²</span><span>peça <b>${peca}</b></span><span>${jt}</span><span><b>${fmt(pm2, 2)}</b> /m²</span>` : '<span>Preencha o espaço e a peça</span>',
+    price: valor, rows,
+    text: `*Cálculo de peças*\nEspaço: ${SQ.modo === 'dim' ? `${fmt(pf(SQ.a))} × ${fmt(pf(SQ.b))} m = ` : ''}${fmt(area)} m²\nPeça: ${peca} · ${jt}\n${fmt(pm2, 2)} peças/m² · perdas ${fmt(perda)}%\n➡️ *${total.toLocaleString('pt-PT')} peças*` + (valor > 0 ? `\nValor: ${fmtFix(valor, 2)} MT${SQ.pmode === 'm2' ? ` (${fmt(preco)} MT/m² × ${fmt(m2buy)} m²)` : ''}` : ''),
+    area, L, W, j
+  };
+}
+function drawSimple(r) {
+  const W = 360, H = 210, IN = 92, WW = W - IN - 14, el = $('viz-simples');
+  let svg = '';
+  if (r.area > 0 && r.L > 0 && r.W > 0) {
+    const a = SQ.modo === 'dim' ? pf(SQ.a) : Math.sqrt(r.area), b = SQ.modo === 'dim' ? pf(SQ.b) : Math.sqrt(r.area);
+    const s = Math.min((WW - 30) / a, (H - 50) / b), x0 = (WW - a * s) / 2 + 4, y0 = (H - b * s) / 2 - 6;
+    const pw = (r.L + r.j) * s, ph = (r.W + r.j) * s, g = r.j > 0 ? Math.max(.3, r.j * s) : Math.min(.5, pw * .06);
+    const z = IN - 8, zpw = (r.L + r.j) * z, zph = (r.W + r.j) * z, zg = r.j > 0 ? Math.max(.8, r.j * z) : .8, zx = W - IN - 6, zy = (H - IN) / 2 - 8;
+    const pat = (id, w, h, gg) => `<pattern id="${id}" width="${w}" height="${h}" patternUnits="userSpaceOnUse"><rect width="${w}" height="${h}" fill="#2b1f15"/><rect width="${Math.max(0, w - gg)}" height="${Math.max(0, h - gg)}" rx="${Math.min(2, w / 8)}" fill="url(#sfl)"/></pattern>`;
+    svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="sfl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB23F"/><stop offset="1" stop-color="#C85210"/></linearGradient>
+      ${pat('sp1', pw, ph, g).replace('userSpaceOnUse"', `userSpaceOnUse" x="${x0}" y="${y0}"`)}${pat('sp2', zpw, zph, zg)}</defs>
+      <rect x="${x0}" y="${y0}" width="${a * s}" height="${b * s}" fill="url(#sp1)" stroke="#5EC8E5" stroke-width="2"/>
+      <g ${MONO} font-size="10.5" font-weight="700" fill="#5EC8E5"><text x="${x0 + a * s / 2}" y="${y0 + b * s + 16}" text-anchor="middle">${SQ.modo === 'dim' ? fmt(a, 2) + ' m' : fmt(r.area, 2) + ' m²'}</text>
+      ${SQ.modo === 'dim' ? `<text x="${x0 - 8}" y="${y0 + b * s / 2}" text-anchor="middle" transform="rotate(-90 ${x0 - 8} ${y0 + b * s / 2})">${fmt(b, 2)} m</text>` : ''}</g>
+      <rect x="${zx}" y="${zy}" width="${IN}" height="${IN}" rx="8" fill="#0A0D0C" stroke="#5EC8E5" stroke-width="1.2"/>
+      <svg x="${zx + 4}" y="${zy + 4}" width="${z}" height="${z}" viewBox="0 0 ${z} ${z}"><rect width="${z}" height="${z}" fill="url(#sp2)"/></svg>
+      <text x="${zx + IN / 2}" y="${zy + IN + 13}" ${MONO} font-size="9" font-weight="700" text-anchor="middle" fill="#5EC8E5">DETALHE 1 m × 1 m</text>
+      <text x="${zx + IN / 2}" y="${zy + IN + 25}" ${MONO} font-size="9" text-anchor="middle" fill="#8D9892">peça ${fmt(r.L * 100)}×${fmt(r.W * 100)} cm</text></svg>`;
+  }
+  const html = svg || `<div class="viz-empty">Escreva o tamanho do espaço e da peça<br>para ver o desenho e o resultado</div>`;
+  if (!document.body.classList.contains('focusing')) el.innerHTML = html;
+  if (tab === 'simples' && innerWidth < 940) $('dockMini').innerHTML = svg;
+}
+function updateSimple(immediate) {
+  const r = calcSimple(); results.simples = r;
+  $('sq-dim').classList.toggle('closed', SQ.modo !== 'dim'); $('sq-area').classList.toggle('closed', SQ.modo !== 'area');
+  $('vt-simples').textContent = fmt(r.area, 2);
+  renderRows('det-simples', r.rows); drawSimple(r);
+  document.querySelectorAll('#sq-pieces [data-qpiece]').forEach(b => { const [l, w] = b.dataset.qpiece.split('x'); b.setAttribute('aria-pressed', pf(SQ.pl) == +l && pf(SQ.pw) == +w); });
+  document.querySelectorAll('#sq-juntas [data-qj]').forEach(b => b.setAttribute('aria-pressed', pf(SQ.j) === +b.dataset.qj));
+  const pl = $('sq-preco').closest('.field').querySelector('.u'); pl.textContent = SQ.pmode === 'm2' ? 'MT/m²' : 'MT';
+  const { a, b, m, ...keep } = SQ; store.set('qo-simple', keep);
+  if (tab === 'simples') { clearTimeout(heroTimer); if (immediate) paintHero(r, 'simples'); else heroTimer = setTimeout(() => paintHero(r, 'simples'), 160); }
+}
+let MODE = store.get('qo-mode', 'simples');
+function setMode(m, first) {
+  MODE = m; store.set('qo-mode', m);
+  document.querySelectorAll('[data-appmode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.appmode === m));
+  document.body.classList.toggle('simple-mode', m === 'simples');
+  if (m === 'simples') {
+    tab = 'simples';
+    TABS.forEach(s => $('sec-' + s).hidden = true);
+    const el = $('sec-simples'); el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    updateSimple(true);
+    if (!first) { buzz(); scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); }
+    onScroll();
+  } else {
+    $('sec-simples').hidden = true;
+    let start = store.get('qo-tab', 'muros'); if (!TABS.includes(start)) start = 'muros';
+    goTab(start, first);
+  }
+}
+
+/* ================= eventos ================= */
+const secOf = el => { const s = el.closest('.sec'); return s ? s.id.slice(4) : null; };
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset && el.dataset.q) { SQ[el.dataset.q] = el.value; updateSimple(); return; }
+  const k = secOf(el); if (!k || k === 'simples') return;
+  if (el.dataset.f) { const row = el.closest('.area'); const r = S[k].areas.find(a => a.id === row.dataset.id); r[el.dataset.f] = el.value;
+    if (r.mode === 'perim' && (el.dataset.f === 'pa' || el.dataset.f === 'pb')) { const sb = row.querySelector('.sides'); if (sb) sb.outerHTML = sidesHTML(k, r); }
+    if (r.mode === 'forma') refreshSpv(k, r);
+    if (CFG[k].kind === 'floor' && S[k].lancil === 'com') refreshLanc(k, r);
+    update(k); }
+  else if (el.dataset.cf) {
+    const row = el.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id), c = r.cuts.find(x => x.id === el.closest('.cut').dataset.cut);
+    c[el.dataset.cf] = el.value;
+    if (el.dataset.cf === 't') { const d = CUTS[c.t]; c.a = d.a; c.b = d.b; const cw = row.querySelector('.cuts'); cw.outerHTML = cutsHTML(k, r); }
+    else { const h = row.querySelector('.cuts-h'); const tot = cutsArea(r); h.innerHTML = `<span>Recortes a descontar</span>${tot > 0 ? `<b>− ${fmt(tot, 2)} m²</b>` : ''}`; }
+    update(k); }
+  else if (el.dataset.s) { S[k][el.dataset.s] = el.value; if (el.dataset.s === 'gw' || el.dataset.s === 'gh') { renderChips(k); syncGs(k); } update(k); }
+});
+document.addEventListener('change', e => { if (e.target.matches('select[data-cf]')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
+document.addEventListener('click', e => {
+  const t = e.target;
+  const step = t.closest('.num button[data-d]');
+  if (step) {
+    e.preventDefault();
+    const inp = step.parentElement.querySelector('input'), st = parseFloat(inp.step) || 1, dec = (String(st).split('.')[1] || '').length;
+    inp.value = Math.max(0, +((pf(inp.value)) + st * +step.dataset.d).toFixed(dec)); buzz();
+    inp.dispatchEvent(new Event('input', { bubbles: true })); return;
+  }
+  const am = t.closest('[data-appmode]'); if (am) { if (am.dataset.appmode !== MODE) setMode(am.dataset.appmode); return; }
+  const qp = t.closest('[data-qpiece]'); if (qp) { const [l, w] = qp.dataset.qpiece.split('x'); SQ.pl = l; SQ.pw = w; $('sq-pl').value = l; $('sq-pw').value = w; buzz(); updateSimple(); return; }
+  const qj = t.closest('[data-qj]'); if (qj) { SQ.j = +qj.dataset.qj; $('sq-j').value = SQ.j; buzz(); updateSimple(); return; }
+  const qg = t.closest('[data-qgroup] button'); if (qg) { const g = qg.parentElement; SQ[g.dataset.qgroup] = qg.dataset.qv; g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === qg)); buzz(); updateSimple(); return; }
+  const k = secOf(t); if (!k || k === 'simples') return;
+  const add = t.closest('[data-add]');
+  if (add) {
+    const last = S[k].areas[S[k].areas.length - 1] || {};
+    const r = { id: nid(), name: '', mode: last.mode === 'desenho' ? 'dim' : (last.mode || (CFG[k].kind === 'slab' ? 'laje' : 'dim')), a: '', b: '', c: '', d: '', m: '', v: '', q: 1, cuts: [], shape: last.shape, _shape: last.shape };
+    S[k].areas.push(r); renderAreas(k, r.id); buzz(); update(k);
+    const el = document.querySelector(`[data-id="${r.id}"]`); el.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
+    setTimeout(() => $(r.id + '-name').focus({ preventScroll: true }), RM ? 0 : 350);
+    return;
+  }
+  const del = t.closest('[data-del]');
+  if (del) {
+    if (S[k].areas.length < 2) return;
+    const row = del.closest('.area'); buzz();
+    const done = () => { S[k].areas = S[k].areas.filter(a => a.id !== del.dataset.del); renderAreas(k); update(k); };
+    if (RM) done(); else { row.classList.add('leave'); setTimeout(done, 320); }
+    return;
+  }
+  const shp = t.closest('[data-shape]');
+  if (shp) {
+    const row = shp.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    r.lsides = null; r.shape = shp.dataset.shape; Object.entries(SHAPES[r.shape].def).forEach(([f, v]) => { if (!pf(r[f]) || r._shape !== r.shape) r[f] = v; }); r._shape = r.shape;
+    buzz(); row.querySelector('.af-wrap').innerHTML = fieldsHTML(k, r); update(k); return;
+  }
+  const addc = t.closest('[data-addcut]');
+  if (addc) {
+    const row = addc.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    (r.cuts = r.cuts || []).push({ id: nid(), t: 'caixa', a: .6, b: .6, q: 1 }); buzz();
+    row.querySelector('.cuts').outerHTML = cutsHTML(k, r); update(k); return;
+  }
+  const delc = t.closest('[data-delcut]');
+  if (delc) {
+    const row = delc.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    r.cuts = r.cuts.filter(c => c.id !== delc.dataset.delcut); buzz();
+    row.querySelector('.cuts').outerHTML = cutsHTML(k, r); update(k); return;
+  }
+  const le = t.closest('[data-ledge], [data-lall], [data-lnone]');
+  if (le) {
+    const row = le.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id), E = floorEdges(r, floorGeom(r));
+    if (le.dataset.lall != null) r.lsides = null;
+    else if (le.dataset.lnone != null) r.lsides = [];
+    else { const i = +le.dataset.ledge, cur = lancSel(r, E); cur[i] = !cur[i]; r.lsides = cur.map((v, j) => v ? j : -1).filter(j => j >= 0); }
+    buzz(); refreshLanc(k, r); update(k); return;
+  }
+  const gs = t.closest('[data-gs]');
+  if (gs) { S[k].gw = S[k].gh = +gs.dataset.gs; $(k + '-gw').value = S[k].gw; $(k + '-gh').value = S[k].gh; buzz(); renderChips(k); syncGs(k); update(k); return; }
+  const drb = t.closest('[data-draw]');
+  if (drb) { openDraw(k, drb.dataset.draw); return; }
+  const sideEl = t.closest('[data-side], [data-preset]');
+  if (sideEl) {
+    const row = sideEl.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    if (sideEl.dataset.preset != null) r.sides = sideEl.dataset.preset;
+    else { const c = sideEl.dataset.side, cur = r.sides ?? 'FTED'; r.sides = 'FTED'.split('').filter(x => x === c ? !cur.includes(c) : cur.includes(x)).join(''); }
+    buzz(); row.querySelector('.sides').outerHTML = sidesHTML(k, r); update(k); return;
+  }
+  const vt = t.closest('.viewtog button');
+  if (vt) {
+    VIEW[k] = vt.dataset.v; store.set('qo-view', VIEW); buzz();
+    vt.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === vt));
+    if (CFG[k].kind === 'floor') { $('viz-' + k).classList.toggle('flat', VIEW[k] === '2d'); applyFloorOrbit(k); }
+    vt.closest('.viz-stage').classList.toggle('is3d', VIEW[k] === '3d');
+    redraw(k); return;
+  }
+  const ob = t.closest('[data-orb]');
+  if (ob) {
+    const o = orb(k); buzz();
+    if (ob.dataset.orb === 'reset') Object.assign(o, ORB_DEF);
+    else zoomAt(k, o.zoom * (ob.dataset.orb === 'in' ? 1.6 : .625), null);
+    orbitRedraw(k); return;
+  }
+  const mb = t.closest('.mini button');
+  if (mb) {
+    const row = mb.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    r.mode = mb.dataset.v; r.lsides = null; buzz();
+    if (r.mode === 'area' && !pf(r.m)) r.m = +areaOf(k, { ...r, mode: 'dim' }).gross.toFixed(2) || '';
+    if (r.mode === 'forma') { r.shape = r.shape || 'trap'; Object.entries(SHAPES[r.shape].def).forEach(([f, v]) => { if (!pf(r[f])) r[f] = v; }); r._shape = r.shape; }
+    if (r.mode === 'desenho' && !(r.pts || []).length) { mb.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === mb)); row.querySelector('.af-wrap').innerHTML = fieldsHTML(k, r); update(k); openDraw(k, r.id); return; }
+    if (r.mode === 'perim') { r.pa = r.pa || r.a || 15; r.pb = r.pb || 30; r.h = r.h || r.b || 2.4; r.sides = r.sides ?? 'FTED'; }
+    mb.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === mb));
+    row.querySelector('.af-wrap').innerHTML = fieldsHTML(k, r); update(k); return;
+  }
+  const chipP = t.closest('[data-p]');
+  if (chipP) {
+    S[k].sel = chipP.dataset.p; buzz();
+    const prod = allProducts(k).find(p => p.id === S[k].sel);
+    if (prod && prod.price) { S[k].preco = prod.price; $(k + '-preco').value = prod.price; }
+    $(k + '-pformbox').classList.add('closed');
+    renderChips(k); update(k);
+    const on = $('chips-' + k).querySelector('[aria-pressed="true"]'); on && on.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', inline: 'nearest', block: 'nearest' });
+    return;
+  }
+  if (t.closest('[data-newp]')) { $(k + '-pformbox').classList.remove('closed'); setTimeout(() => $(k + '-np-name').focus(), 200); return; }
+  if (t.closest('[data-cancelp]')) { $(k + '-pformbox').classList.add('closed'); return; }
+  if (t.closest('[data-savep]')) {
+    const name = $(k + '-np-name').value.trim(), l = pf($(k + '-np-l').value), w = pf($(k + '-np-w').value);
+    let pm2 = pf($(k + '-np-pm2').value); const price = pf($(k + '-np-price').value);
+    if (!name) { toast('Escreva o nome do produto'); $(k + '-np-name').focus(); return; }
+    if (!pm2 && !(l && w)) { toast('Indique as peças por m² ou a medida'); $(k + '-np-pm2').focus(); return; }
+    const p = { id: 'c' + Date.now(), name, custom: true, price: price || undefined };
+    if (pm2) { p.pm2 = pm2; p.sub = fmt(pm2, 1) + '/m²'; } else { p.L = l / 100; p.W = w / 100; p.sub = `${fmt(l)}×${fmt(w)} cm`; }
+    S[k].custom.push(p); store.set('qo-prod-' + k, S[k].custom);
+    S[k].sel = p.id; if (price) { S[k].preco = price; $(k + '-preco').value = price; }
+    ['name', 'pm2', 'l', 'w', 'price'].forEach(f => $(k + '-np-' + f).value = '');
+    $(k + '-pformbox').classList.add('closed'); renderChips(k); update(k); toast(`«${name}» guardado`); return;
+  }
+  const delp = t.closest('[data-delp]');
+  if (delp) {
+    const p = S[k].custom.find(x => x.id === delp.dataset.delp);
+    S[k].custom = S[k].custom.filter(x => x.id !== delp.dataset.delp); store.set('qo-prod-' + k, S[k].custom);
+    if (S[k].sel === delp.dataset.delp) S[k].sel = CFG[k].sel;
+    renderChips(k); update(k); toast(`«${p ? p.name : 'Produto'}» apagado`); return;
+  }
+  const g = t.closest('.seg[data-group], .chips[data-group]');
+  const b = t.closest('button');
+  if (g && b && g.contains(b)) {
+    g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    S[k][g.dataset.group] = b.dataset.v; buzz();
+    if (g.dataset.group === 'gsize') renderChips(k);
+    if (g.dataset.group === 'lancil') { S[k].lancil = b.dataset.v; renderAreas(k); }
+    if (g.classList.contains('seg')) placeThumb(g);
+    update(k);
+  }
+});
+function placeThumb(seg) {
+  const th = seg.querySelector('.thumb'), on = seg.querySelector('[aria-pressed="true"]');
+  if (!th || !on || !seg.offsetWidth) return;
+  th.style.width = on.offsetWidth + 'px'; th.style.transform = `translateX(${on.offsetLeft - 4}px)`;
+}
+const placeAll = () => document.querySelectorAll('.seg').forEach(placeThumb);
+addEventListener('resize', placeAll);
+
+/* manter o campo visível entre o resultado (em cima) e o teclado (em baixo) */
+const vv = window.visualViewport;
+let focusEl = null, fitT = null;
+function keepVisible() {
+  const el = focusEl; if (!el || !document.contains(el)) return;
+  const vTop = vv ? vv.offsetTop : 0, vH = vv ? vv.height : innerHeight;
+  const heroB = innerWidth < 940 && document.body.classList.contains('docked') ? $('dock').offsetHeight : 0;
+  const top = Math.max(vTop, heroB) + 12, bottom = vTop + vH - 16;
+  let box = el.closest('.area') || el.closest('.field') || el;
+  let r = box.getBoundingClientRect();
+  if (r.height > bottom - top) { box = el.closest('.af') || el.closest('.field') || el.closest('.num') || el; r = box.getBoundingClientRect(); }
+  let dy = 0;
+  if (r.top < top) dy = r.top - top;
+  else if (r.bottom > bottom) dy = Math.min(r.bottom - bottom, r.top - top);
+  if (Math.abs(dy) > 2) scrollBy({ top: dy, behavior: RM ? 'auto' : 'smooth' });
+}
+const scheduleFit = ms => { clearTimeout(fitT); fitT = setTimeout(keepVisible, ms); };
+if (vv) vv.addEventListener('resize', () => { if (focusEl) scheduleFit(80); });
+document.addEventListener('focusin', e => {
+  if (!e.target.matches || !e.target.matches('main input')) return;
+  const first = !focusEl; focusEl = e.target;
+  if (!e.target.enterKeyHint) e.target.enterKeyHint = 'next';
+  scheduleFit(first ? 520 : 80); // espera a miniatura abrir e o teclado subir
+});
+document.addEventListener('focusout', () => setTimeout(() => { const a = document.activeElement; if (!(a && a.matches && a.matches('main input'))) focusEl = null; }, 150));
+// Enter/"Seguinte" no teclado passa ao próximo campo; no último fecha o teclado
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches('main input')) return;
+  e.preventDefault();
+  const sec = e.target.closest('.sec');
+  const list = [...sec.querySelectorAll('input')].filter(i => !i.disabled && i.offsetParent && !i.closest('.reveal.closed'));
+  const nx = list[list.indexOf(e.target) + 1];
+  if (nx && nx.closest('.card') === e.target.closest('.card')) nx.focus(); else e.target.blur();
+});
+
+/* girar e aproximar o 3D com o dedo ou o rato */
+const orbitRaf = {};
+function orbitRedraw(k) {
+  if (orbitRaf[k]) return;
+  orbitRaf[k] = requestAnimationFrame(() => { orbitRaf[k] = 0; if (CFG[k].kind === 'floor') { applyFloorOrbit(k); redraw(k); } else redraw(k); });
+}
+// converte a posição do dedo para coordenadas do desenho (viewBox 360×210)
+function svgPt(k, cx, cy) {
+  const st = document.querySelector(`.viz-stage[data-orbit="${k}"]`), r = st.getBoundingClientRect();
+  if (CFG[k].kind === 'floor') return [cx - r.left - r.width / 2, cy - r.top - r.height / 2, 1];
+  const sc = Math.min(r.width / 360, r.height / 210), ox = r.left + (r.width - 360 * sc) / 2, oy = r.top + (r.height - 210 * sc) / 2;
+  return [(cx - ox) / sc, (cy - oy) / sc, sc];
+}
+// aproxima mantendo fixo o ponto tocado
+function zoomAt(k, z, pt) {
+  const o = orb(k), z2 = Math.min(ZMAX, Math.max(ZMIN, z)), f = z2 / o.zoom;
+  if (pt) {
+    const C = CFG[k].kind === 'floor' ? [0, 0] : (CEN[k] || [180, 105]);
+    o.px = pt[0] - C[0] - (pt[0] - C[0] - o.px) * f; o.py = pt[1] - C[1] - (pt[1] - C[1] - o.py) * f;
+  } else { o.px *= f; o.py *= f; }
+  o.zoom = z2; if (o.zoom <= 1.001) { o.px *= .5; o.py *= .5; }
+  orbitRedraw(k);
+}
+const ptrs = new Map(); let pinch = null, lastTap = 0;
+document.addEventListener('pointerdown', e => {
+  const st = e.target.closest('.viz-stage.is3d'); if (!st || e.target.closest('button')) return;
+  const k = st.dataset.orbit; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, k, pan: e.button === 2 || e.shiftKey });
+  try { st.setPointerCapture(e.pointerId); } catch (_) {}
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, z: orb(k).zoom }; }
+  else if (ptrs.size === 1) {
+    const now = Date.now();
+    if (now - lastTap < 300) { zoomAt(k, orb(k).zoom * 2.5, svgPt(k, e.clientX, e.clientY)); lastTap = 0; } else lastTap = now;
+  }
+});
+document.addEventListener('pointermove', e => {
+  const pt = ptrs.get(e.pointerId); if (!pt) return;
+  const k = pt.k, o = orb(k);
+  if (ptrs.size >= 2 && pinch) {
+    pt.x = e.clientX; pt.y = e.clientY;
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const s0 = svgPt(k, mx, my); // mover com dois dedos
+    o.px += (mx - pinch.mx) / s0[2]; o.py += (my - pinch.my) / s0[2];
+    pinch.mx = mx; pinch.my = my;
+    if (pinch.d > 0) { const target = pinch.z * d / pinch.d; zoomAt(k, target, s0); }
+    orbitRedraw(k);
+    return;
+  }
+  const dx = e.clientX - pt.x, dy = e.clientY - pt.y; pt.x = e.clientX; pt.y = e.clientY;
+  if (Math.abs(dx) + Math.abs(dy) > 2) lastTap = 0;
+  if (pt.pan) { const sc = svgPt(k, 0, 0)[2]; o.px += dx / sc; o.py += dy / sc; }
+  else { o.yaw = (o.yaw - dx * .5 + 360) % 360; o.pitch = Math.min(88, Math.max(8, o.pitch + dy * .35)); } // segue o dedo
+  orbitRedraw(k);
+});
+const endPtr = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; };
+document.addEventListener('pointerup', endPtr); document.addEventListener('pointercancel', endPtr);
+document.addEventListener('contextmenu', e => { if (e.target.closest('.viz-stage.is3d')) e.preventDefault(); });
+document.addEventListener('wheel', e => {
+  const st = e.target.closest('.viz-stage.is3d'); if (!st) return;
+  e.preventDefault(); const k = st.dataset.orbit;
+  zoomAt(k, orb(k).zoom * (e.deltaY < 0 ? 1.18 : .85), svgPt(k, e.clientX, e.clientY));
+}, { passive: false });
+
+/* modo foco */
+let blurT;
+document.addEventListener('focusin', e => {
+  const card = e.target.closest && e.target.closest('main .card');
+  if (!card || !e.target.matches('input')) return;
+  clearTimeout(blurT);
+  document.querySelectorAll('.card.is-focus').forEach(c => c !== card && c.classList.remove('is-focus'));
+  card.classList.add('is-focus'); document.body.classList.add('focusing'); onScroll();
+  const row = e.target.closest('.area'), k = secOf(e.target);
+  const nh = row ? { k, id: row.dataset.id } : null;
+  if (JSON.stringify(nh) !== JSON.stringify(HL)) { HL = nh; redraw(k); }
+});
+document.addEventListener('focusout', () => {
+  blurT = setTimeout(() => {
+    const a = document.activeElement;
+    if (a && a.matches && a.matches('main input')) return;
+    document.body.classList.remove('focusing'); onScroll(); document.querySelectorAll('.card.is-focus').forEach(c => c.classList.remove('is-focus'));
+    HL = null; if (tab === 'simples') drawSimple(results.simples); else redraw(tab);
+    // ao sair do campo: o resultado "pulsa" para se ver o valor final
+    const d = $('dock'); d.classList.remove('reveal'); void d.offsetWidth; d.classList.add('reveal');
+    const h = $('hero'); h.classList.remove('bump'); void h.offsetWidth; h.classList.add('bump');
+  }, 120);
+});
+
+/* ripple */
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn, .chip, .tabbar button, .add'); if (!b || RM) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
+  sp.className = 'rip'; sp.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX - r.left - s / 2}px;top:${e.clientY - r.top - s / 2}px`;
+  if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+  b.style.overflow = 'hidden'; b.appendChild(sp); setTimeout(() => sp.remove(), 650);
+});
+
+/* separadores */
+function goTab(name, first) {
+  tab = name;
+  document.querySelectorAll('.tabbar button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
+  $('ind').style.transform = `translateX(${TABS.indexOf(name) * 100}%)`;
+  if ($('sec-simples')) $('sec-simples').hidden = true;
+  TABS.forEach(s => { const el = $('sec-' + s), on = s === name; el.hidden = !on; el.classList.remove('show'); if (on) { void el.offsetWidth; el.classList.add('show'); } });
+  requestAnimationFrame(placeAll);
+  if (!first) { buzz(); scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); }
+  store.set('qo-tab', name);
+  if (results[name]) paintHero(results[name], name);
+  redraw(name); onScroll();
+}
+document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => goTab(b.dataset.tab)));
+
+function onScroll() {
+  const phone = innerWidth < 940, focusing = document.body.classList.contains('focusing');
+  document.body.classList.toggle('docked', phone && (focusing || $('heroWrap').getBoundingClientRect().bottom < 12));
+}
+addEventListener('scroll', onScroll, { passive: true });
+
+/* partilhar / copiar */
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2400); }
+function copy(txt) {
+  try { navigator.clipboard.writeText(txt).then(() => toast('Copiado — cole no WhatsApp'), () => toast('Não foi possível copiar')); }
+  catch (e) { toast('Não foi possível copiar'); }
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]'), s = e.target.closest('[data-share]');
+  if (c) copy(results[c.dataset.copy].text);
+  if (s) { const txt = results[s.dataset.share].text; if (navigator.share) navigator.share({ text: txt }).catch(err => { if (err && err.name !== 'AbortError') copy(txt); }); else copy(txt); }
+});
+
+/* splash + arranque */
+$('splash-t').innerHTML = [...'Quantificador'].map((ch, i) => `<span style="animation-delay:${.45 + i * .035}s">${ch}</span>`).join('');
+let seen = false; try { seen = sessionStorage.getItem('qo-splash') === '1'; sessionStorage.setItem('qo-splash', '1'); } catch (e) {}
+const sp = $('splash');
+let booted = false;
+function boot() {
+  if (booted) return; booted = true;
+  let start = store.get('qo-tab', 'muros'); if (!TABS.includes(start)) start = 'muros';
+  odoBig.reset(); odoDock.reset();
+  if (MODE === 'simples') setMode('simples', true); else goTab(start, true);
+}
+TABS.forEach(k => { if (CFG[k].kind === 'floor') applyFloorOrbit(k); });
+initDraw();
+$('main').insertAdjacentHTML('afterbegin', simpleHTML());
+const endSplash = () => { if (sp.classList.contains('out')) return; sp.classList.add('out'); setTimeout(() => sp.remove(), 800); boot(); };
+sp.addEventListener('click', endSplash);
+update(null, false);
+if (seen || RM) { sp.remove(); boot(); } else setTimeout(endSplash, 1900);
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+</script>
+</body>
+</html>

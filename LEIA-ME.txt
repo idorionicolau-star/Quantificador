@@ -1,0 +1,35 @@
+QUANTIFICADOR DE OBRA — pronto para publicar
+
+CONTEÚDO
+  index.html            a aplicação (modo Simples + modo Completo)
+  sw.js                 funciona sem internet depois da 1.ª abertura
+  manifest.webmanifest  nome e ícones para instalar no telemóvel
+  icon-*.png            ícones
+  vercel.json           configuração do Vercel (não mexer)
+
+PUBLICAR NO VERCEL (opção A — sem instalar nada, via GitHub)
+  1. Crie um repositório no GitHub (ex.: quantificador) e envie estes ficheiros
+     (no site do GitHub: "Add file" > "Upload files" > arraste tudo desta pasta > "Commit").
+  2. Entre em vercel.com > "Add New..." > "Project" > escolha o repositório > "Deploy".
+     Framework: "Other". Não precisa de Build Command nem de Output Directory.
+  3. Fica online em https://quantificador-xxxx.vercel.app
+  Para actualizar: substitua os ficheiros no GitHub; o Vercel publica sozinho.
+
+PUBLICAR NO VERCEL (opção B — pelo computador, com Node.js instalado)
+  1. Abra o terminal nesta pasta.
+  2. npm i -g vercel
+  3. vercel login
+  4. vercel --prod
+  (Da primeira vez responda: Set up and deploy? Y · Link to existing project? N · nome: quantificador · directório: ./)
+
+DOMÍNIO PRÓPRIO (opcional)
+  Vercel > projecto > Settings > Domains > adicionar (ex.: quantificador.majorgroup.app).
+
+INSTALAR NO ANDROID
+  Abrir o link no Chrome > menu ⋮ > "Instalar app".
+
+GERAR APK
+  pwabuilder.com > colar o link do Vercel > "Package for stores" > Android.
+
+ACTUALIZAR A APP
+  Substitua o index.html e mude CACHE = 'quantificador-v16' para v17, v18… no sw.js.
