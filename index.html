@@ -433,6 +433,9 @@ body.simple-mode .app{padding-bottom:40px}
 .brand{min-width:0}
 @media (max-width:480px){.brand small{display:none}.brand b{font-size:16px;letter-spacing:.02em;white-space:nowrap}.logo{grid-template-columns:repeat(4,5px)}.modesw button{padding:7px 10px;font-size:11.5px}}
 @media (max-width:350px){.brand b{font-size:15px}}
+.ops{border-color:rgba(94,200,229,.35);background:rgba(94,200,229,.04)}
+.ops .cuts-h b{color:var(--blue)}
+.ops .addcut{border-color:rgba(94,200,229,.5);color:var(--blue)}
 </style>
 </head>
 <body>
@@ -534,7 +537,7 @@ const CFG = {
       { id: 'b15', name: 'Bloco 15', sub: '15×20×40 cm', L: .40, W: .20, t: .15 },
       { id: 'b20', name: 'Bloco 20', sub: '20×20×40 cm', L: .40, W: .20, t: .20 }],
     sel: 'b15',
-    areas: [{ name: '', mode: 'dim', a: '', b: '', d: '' }],
+    areas: [{ name: '', mode: 'dim', a: '', b: '', ops: [] }],
     note: 'Argamassa de assentamento estimada com traço 1:6 (cimento : areia). Valores aproximados; confirme sempre em obra.' },
   grelhas: { kind: 'wall', pattern: 'grelha', unit: 'grelhas', label: 'Grelhas necessárias', piece: 'grelhas',
     title: 'Cobogós &amp; <em>grelhas</em>', lede: 'Faixas de cobogó em uma ou várias partes', vizLabel: 'Vista das faixas', jUnit: 'cm', jDef: 1, junta: 'com', mortar: false, freeDef: 25,
@@ -544,7 +547,7 @@ const CFG = {
       { id: 'ccr', name: 'Cobogó Cruz', model: 'cruz' },
       { id: 'cq', name: 'Cobogó Quadrados', model: 'quad' }],
     sel: 'cf',
-    areas: [{ name: '', mode: 'dim', a: '', b: '', d: '' }],
+    areas: [{ name: '', mode: 'dim', a: '', b: '', ops: [] }],
     note: 'Grelha assenta normalmente com junta de 1 cm. Para produtos por m², a junta já está incluída no número.' },
   pave: { kind: 'floor', unit: 'peças', label: 'Peças de pavê', piece: 'peças',
     title: 'Pavê', lede: 'Quintal, entrada, passeio… some tudo', vizLabel: 'Vista do pavimento', jUnit: 'mm', jDef: 3, junta: 'sem', freeDef: 50,
@@ -560,6 +563,7 @@ const CFG = {
     note: 'Volume seco × 1,54 e cimento a 1 440 kg/m³. Valores aproximados; confirme em obra.' }
 };
 const TABS = ['muros', 'grelhas', 'pave', 'lajes'];
+const wallOpen = r => opsArea(r) + (r.ops ? 0 : pf(r.d));
 const S = {};
 TABS.forEach(k => {
   const c = CFG[k];
@@ -670,8 +674,8 @@ const MODES = {
 function fieldsHTML(k, r) {
   const kind = CFG[k].kind, f = (fld, label, unit) => `<label class="af"><span>${label}</span><div class="num"><input type="number" inputmode="decimal" data-f="${fld}" value="${r[fld] ?? ''}" id="${r.id}-${fld}" placeholder="0"><span class="u">${unit}</span></div></label>`;
   let list;
-  if (kind === 'wall' && r.mode === 'perim') return `<div class="area-fields n4" style="--n:4">${[f('pa', 'Frente', 'm'), f('pb', 'Lado', 'm'), f('h', 'Altura', 'm'), f('d', 'Portão', 'm²')].join('')}</div>${sidesHTML(k, r)}`;
-  if (kind === 'wall') list = r.mode === 'dim' ? [f('a', 'Comprimento', 'm'), f('b', 'Altura', 'm'), f('d', 'Descontar', 'm²')] : [f('m', 'Área', 'm²'), f('d', 'Descontar', 'm²')];
+  if (kind === 'wall' && r.mode === 'perim') return `<div class="area-fields n3" style="--n:3">${[f('pa', 'Frente', 'm'), f('pb', 'Lado', 'm'), f('h', 'Altura', 'm')].join('')}</div>${sidesHTML(k, r)}${opsHTML(k, r)}`;
+  if (kind === 'wall') return `<div class="area-fields n2" style="--n:2">${(r.mode === 'dim' ? [f('a', 'Comprimento', 'm'), f('b', 'Altura', 'm')] : [f('m', 'Área', 'm²')]).join('')}</div>${opsHTML(k, r)}`;
   else if (kind === 'floor') return floorFieldsHTML(k, r, f);
   else if (r.mode === 'laje') list = [f('a', 'Compr.', 'm'), f('b', 'Largura', 'm'), f('c', 'Espess.', 'cm'), f('q', 'Qtd', 'un')];
   else if (r.mode === 'viga') list = [f('a', 'Compr.', 'm'), f('b', 'Largura', 'cm'), f('c', 'Altura', 'cm'), f('q', 'Qtd', 'un')];
@@ -819,6 +823,28 @@ function lancilHTML(k, r) {
   </div>`;
 }
 function refreshLanc(k, r) { const el = document.querySelector(`[data-lanc="${r.id}"]`) || document.querySelector(`.area[data-id="${r.id}"] .lanc`); if (el) el.outerHTML = lancilHTML(k, r); }
+
+
+/* ---------- aberturas a descontar nos muros (comprimento × altura × quantidade) ---------- */
+const OPS = { porta: { name: 'Porta', a: .9, b: 2.1 }, janela: { name: 'Janela', a: 1.2, b: 1 }, portao: { name: 'Portão', a: 3, b: 2.4 }, outro: { name: 'Outra abertura', a: 1, b: 1 } };
+const opArea = o => Math.max(0, Math.round(pf(o.q))) * pf(o.a) * pf(o.b);
+const opsArea = r => (r.ops || []).reduce((t, o) => t + opArea(o), 0);
+function opsHTML(k, r) {
+  const list = (r.ops || []).map(o => `<div class="cut" data-op="${o.id}">
+      <select data-of="t" aria-label="Tipo de abertura">${Object.entries(OPS).map(([v, d]) => `<option value="${v}" ${o.t === v ? 'selected' : ''}>${d.name}</option>`).join('')}</select>
+      <div class="cutf">
+        <label class="af"><span>Compr.</span><div class="num"><input type="number" inputmode="decimal" data-of="a" value="${o.a}" id="${o.id}-a"><span class="u">m</span></div></label>
+        <label class="af"><span>Altura</span><div class="num"><input type="number" inputmode="decimal" data-of="b" value="${o.b}" id="${o.id}-b"><span class="u">m</span></div></label>
+        <label class="af"><span>Qtd</span><div class="num"><input type="number" inputmode="numeric" data-of="q" value="${o.q}" id="${o.id}-q"><span class="u">un</span></div></label>
+        <button class="del" data-delop="${o.id}" aria-label="Remover abertura">×</button>
+      </div></div>`).join('');
+  const tot = opsArea(r);
+  return `<div class="cuts ops">
+    <div class="cuts-h"><span>Aberturas a descontar</span>${tot > 0 ? `<b>− ${fmt(tot, 2)} m²</b>` : ''}</div>
+    ${list}
+    <button class="addcut" data-addop="${r.id}">+ Abertura (porta, janela, portão…)</button>
+  </div>`;
+}
 
 function refreshSpv(k, r) { const el = document.querySelector(`[data-spv="${r.id}"]`); if (!el) return; const g = floorGeom(r); el.innerHTML = (g.pts.length ? shapeSVG(g) : '') + (g.err ? `<p class="warn">${g.err}</p>` : ''); }
 
@@ -1290,7 +1316,7 @@ function applyFloorOrbit(k) { const el = $('viz-' + k); if (el) el.style.transfo
 /* ================= cálculos ================= */
 function areaOf(k, r) {
   const kind = CFG[k].kind;
-  if (kind === 'wall') { const g = r.mode === 'dim' ? pf(r.a) * pf(r.b) : r.mode === 'perim' ? perimLen(r) * pf(r.h) : pf(r.m); return { gross: g, net: Math.max(0, g - pf(r.d)) }; }
+  if (kind === 'wall') { const g = r.mode === 'dim' ? pf(r.a) * pf(r.b) : r.mode === 'perim' ? perimLen(r) * pf(r.h) : pf(r.m); return { gross: g, net: Math.max(0, g - wallOpen(r)), open: wallOpen(r) }; }
   if (kind === 'floor') { const g = floorGeom(r), c = cutsArea(r); return { gross: g.area, net: Math.max(0, g.area - c), perim: g.noPerim ? 0 : g.perim, cuts: c, lanc: lancilLen(r) }; }
   const q = Math.max(1, Math.round(pf(r.q) || 1));
   let v = 0;
@@ -1299,6 +1325,7 @@ function areaOf(k, r) {
   else v = pf(r.v);
   return { gross: v, net: v };
 }
+const opsTxt = r => { const l = (r.ops || []).filter(o => opArea(o) > 0); return l.length ? ' − ' + l.map(o => `${Math.round(pf(o.q))}× ${(OPS[o.t] || OPS.outro).name.toLowerCase()} ${fmt(pf(o.a))}×${fmt(pf(o.b))}`).join(', ') + ` (${fmt(opsArea(r))} m²)` : ''; };
 function areaLine(k, r, i) {
   const n = r.name || `${CFG[k].kind === 'slab' ? 'Peça' : 'Área'} ${i + 1}`, a = areaOf(k, r);
   const kind = CFG[k].kind;
@@ -1308,14 +1335,14 @@ function areaLine(k, r, i) {
     if (r.mode === 'viga') return `• ${n}: ${fmt(pf(r.a))} m × ${fmt(pf(r.b))} × ${fmt(pf(r.c))} cm${qt} = ${fmt(a.net, 3)} m³`;
     return `• ${n}: ${fmt(a.net, 3)} m³`;
   }
-  if (r.mode === 'perim') { const sd = r.sides ?? 'FTED'; return `• ${n}: terreno ${fmt(pf(r.pa))} × ${fmt(pf(r.pb))} m, ${sd.length} ${sd.length === 1 ? 'lado' : 'lados'} (${[...sd].map(c => SIDE_NAMES[c]).join(', ')}) = ${fmt(perimLen(r))} m × ${fmt(pf(r.h))} m${pf(r.d) > 0 ? ' − ' + fmt(pf(r.d)) : ''} = ${fmt(a.net)} m²`; }
+  if (r.mode === 'perim') { const sd = r.sides ?? 'FTED'; return `• ${n}: terreno ${fmt(pf(r.pa))} × ${fmt(pf(r.pb))} m, ${sd.length} ${sd.length === 1 ? 'lado' : 'lados'} (${[...sd].map(c => SIDE_NAMES[c]).join(', ')}) = ${fmt(perimLen(r))} m × ${fmt(pf(r.h))} m${opsTxt(r)} = ${fmt(a.net)} m²`; }
   if (kind === 'floor') {
     const shp = r.mode === 'forma' ? `${SHAPES[r.shape || 'trap'].name} (${SHAPES[r.shape || 'trap'].f.map(([fl, l]) => l.toLowerCase() + ' ' + fmt(pf(r[fl]))).join(', ')})` : r.mode === 'desenho' ? `desenho com ${(r.pts || []).length} cantos` : r.mode === 'area' ? `${fmt(pf(r.m))} m²` : `${fmt(pf(r.a))} × ${fmt(pf(r.b))}`;
     const cs = (r.cuts || []).filter(c => cutArea(c) > 0).map(c => `${Math.round(pf(c.q))}× ${(CUTS[c.t] || CUTS.outro).name.toLowerCase()}`).join(', ');
     return `• ${n}: ${shp} = ${fmt(a.gross)} m²${a.cuts > 0 ? ` − recortes (${cs}) ${fmt(a.cuts)} m²` : ''} → ${fmt(a.net)} m²`;
   }
   const dim = r.mode === 'dim' ? `${fmt(pf(r.a))} × ${fmt(pf(r.b))}` : `${fmt(pf(r.m))} m²`;
-  const d = kind === 'wall' && pf(r.d) > 0 ? ` − ${fmt(pf(r.d))}` : '';
+  const d = kind === 'wall' ? opsTxt(r) : '';
   return `• ${n}: ${dim}${d} = ${fmt(a.net)} m²`;
 }
 function calcPieces(k) {
@@ -1366,8 +1393,8 @@ function calcPieces(k) {
   let viz;
   if (c.kind === 'wall') viz = { th: c.pattern === 'grelha' ? .1 : (prod.t || .15), pattern: c.pattern, model: prod.model || 'quad', bl: PL || Math.sqrt(1 / Math.max(pm2, .1)), bh: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
     segs: s.areas.map((r, i) => { const g = per[i].gross;
-      if (r.mode === 'perim') return { idx: i, w: perimLen(r), h: pf(r.h), open: Math.min(pf(r.d), g * .6), areaMode: 0, perim: 1, pa: pf(r.pa), pb: pf(r.pb), sides: r.sides ?? 'FTED' };
-      const am = r.mode !== 'dim'; const h = am ? Math.min(2.4, Math.max(.4, Math.sqrt(g / 3))) : pf(r.b); return { idx: i, w: am ? (h ? g / h : 0) : pf(r.a), h, open: Math.min(pf(r.d), g * .6), areaMode: am ? 1 : 0 }; }) };
+      if (r.mode === 'perim') return { idx: i, w: perimLen(r), h: pf(r.h), open: Math.min(wallOpen(r), g * .6), areaMode: 0, perim: 1, pa: pf(r.pa), pb: pf(r.pb), sides: r.sides ?? 'FTED' };
+      const am = r.mode !== 'dim'; const h = am ? Math.min(2.4, Math.max(.4, Math.sqrt(g / 3))) : pf(r.b); return { idx: i, w: am ? (h ? g / h : 0) : pf(r.a), h, open: Math.min(wallOpen(r), g * .6), areaMode: am ? 1 : 0 }; }) };
   else viz = { tl: PL || Math.sqrt(1 / Math.max(pm2, .1)), tw: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
     shapes: s.areas.map((r, i) => ({ idx: i, pts: floorGeom(r).pts, lanc: s.lancil === 'com' ? (() => { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.flatMap((e, j) => on[j] ? e.segs : []); })() : [], cuts: (r.cuts || []).map(c => ({ circ: (CUTS[c.t] || {}).circ ? 1 : 0, a: pf(c.a), b: pf(c.b), q: Math.max(0, Math.round(pf(c.q))) })) })) };
   return {
@@ -1561,6 +1588,12 @@ document.addEventListener('input', e => {
     if (r.mode === 'forma') refreshSpv(k, r);
     if (CFG[k].kind === 'floor' && S[k].lancil === 'com') refreshLanc(k, r);
     update(k); }
+  else if (el.dataset.of) {
+    const row = el.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id), o = r.ops.find(x => x.id === el.closest('.cut').dataset.op);
+    o[el.dataset.of] = el.value;
+    if (el.dataset.of === 't') { const d = OPS[o.t]; o.a = d.a; o.b = d.b; row.querySelector('.ops').outerHTML = opsHTML(k, r); }
+    else { const h = row.querySelector('.ops .cuts-h'), tot = opsArea(r); h.innerHTML = `<span>Aberturas a descontar</span>${tot > 0 ? `<b>− ${fmt(tot, 2)} m²</b>` : ''}`; }
+    update(k); }
   else if (el.dataset.cf) {
     const row = el.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id), c = r.cuts.find(x => x.id === el.closest('.cut').dataset.cut);
     c[el.dataset.cf] = el.value;
@@ -1569,7 +1602,7 @@ document.addEventListener('input', e => {
     update(k); }
   else if (el.dataset.s) { S[k][el.dataset.s] = el.value; if (el.dataset.s === 'gw' || el.dataset.s === 'gh') { renderChips(k); syncGs(k); } update(k); }
 });
-document.addEventListener('change', e => { if (e.target.matches('select[data-cf]')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
+document.addEventListener('change', e => { if (e.target.matches('select[data-cf], select[data-of]')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
 document.addEventListener('click', e => {
   const t = e.target;
   const step = t.closest('.num button[data-d]');
@@ -1587,7 +1620,7 @@ document.addEventListener('click', e => {
   const add = t.closest('[data-add]');
   if (add) {
     const last = S[k].areas[S[k].areas.length - 1] || {};
-    const r = { id: nid(), name: '', mode: last.mode === 'desenho' ? 'dim' : (last.mode || (CFG[k].kind === 'slab' ? 'laje' : 'dim')), a: '', b: '', c: '', d: '', m: '', v: '', q: 1, cuts: [], shape: last.shape, _shape: last.shape };
+    const r = { id: nid(), name: '', mode: last.mode === 'desenho' ? 'dim' : (last.mode || (CFG[k].kind === 'slab' ? 'laje' : 'dim')), a: '', b: '', c: '', d: '', m: '', v: '', q: 1, cuts: [], ops: [], shape: last.shape, _shape: last.shape };
     S[k].areas.push(r); renderAreas(k, r.id); buzz(); update(k);
     const el = document.querySelector(`[data-id="${r.id}"]`); el.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'center' });
     setTimeout(() => $(r.id + '-name').focus({ preventScroll: true }), RM ? 0 : 350);
@@ -1606,6 +1639,20 @@ document.addEventListener('click', e => {
     const row = shp.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
     r.lsides = null; r.shape = shp.dataset.shape; Object.entries(SHAPES[r.shape].def).forEach(([f, v]) => { if (!pf(r[f]) || r._shape !== r.shape) r[f] = v; }); r._shape = r.shape;
     buzz(); row.querySelector('.af-wrap').innerHTML = fieldsHTML(k, r); update(k); return;
+  }
+  const addo = t.closest('[data-addop]');
+  if (addo) {
+    const row = addo.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    const first = !(r.ops || []).length, t0 = first ? 'porta' : 'janela';
+    if (!r.ops) { r.ops = []; if (pf(r.d) > 0) r.ops.push({ id: nid(), t: 'outro', a: pf(r.d), b: 1, q: 1 }); r.d = ''; }
+    r.ops.push({ id: nid(), t: t0, a: OPS[t0].a, b: OPS[t0].b, q: 1 }); buzz();
+    row.querySelector('.ops').outerHTML = opsHTML(k, r); update(k); return;
+  }
+  const delo = t.closest('[data-delop]');
+  if (delo) {
+    const row = delo.closest('.area'), r = S[k].areas.find(a => a.id === row.dataset.id);
+    r.ops = r.ops.filter(o => o.id !== delo.dataset.delop); buzz();
+    row.querySelector('.ops').outerHTML = opsHTML(k, r); update(k); return;
   }
   const addc = t.closest('[data-addcut]');
   if (addc) {
