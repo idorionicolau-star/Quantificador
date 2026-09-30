@@ -318,6 +318,17 @@ body.drawing{overflow:hidden}
 .draw-row button:disabled{opacity:.35}
 .draw-row button[aria-pressed="true"]{background:var(--blue);color:#06212a;border-color:var(--blue)}
 .draw-row .ok{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink);border:0;font-weight:800}
+.draw-meas{max-height:34vh;overflow:auto;display:grid;gap:8px;border:1px solid var(--line2);border-radius:14px;padding:10px 12px;background:var(--bg2)}
+.draw-meas:empty{display:none}
+.draw-meas .dm-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:800 16px var(--display);letter-spacing:.05em;text-transform:uppercase;color:var(--accent2)}
+.draw-meas .dm-t small{font:500 10px var(--mono);letter-spacing:.04em;text-transform:none;color:var(--muted);text-align:right}
+.draw-meas .dm-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.draw-meas .field span{font-size:10px}
+.draw-meas .field.diag span{color:var(--accent2)}
+.draw-meas .num input{font-size:17px;padding:8px 2px 8px 10px}
+.draw-meas .dm-ang{font:600 12px/1.6 var(--mono);color:var(--ink)}
+.draw-meas .dm-ang b{color:var(--blue)}
+.draw-meas .dm-note{margin:0;font:500 11px/1.45 var(--body);color:var(--muted)}
 .draw-hint{margin:0;font:500 11px var(--mono);color:var(--muted);text-align:center}
 
 /* ---------- v6: terreno/lados, 2D/3D, cobogós ---------- */
@@ -408,6 +419,25 @@ body.drawing{overflow:hidden}
 .draw-row button{font-size:12px;padding:10px 4px;overflow-wrap:anywhere}
 
 /* ---------- v16: modo simples, vazio, PC ---------- */
+.topr{display:flex;align-items:center;gap:8px}
+.helpbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:var(--bg2);color:var(--accent2);font:800 17px var(--display);cursor:pointer;flex:0 0 auto}
+.helpbtn:active{background:var(--accent);color:var(--accent-ink)}
+/* demonstração "Como usar" */
+.tour{position:fixed;inset:0;z-index:200;pointer-events:auto}
+.tour-ring{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(5,7,6,.72),0 0 0 3px var(--accent),0 0 30px 4px var(--glow);transition:left .45s var(--ease),top .45s var(--ease),width .45s var(--ease),height .45s var(--ease);pointer-events:none}
+.tour-hand{position:fixed;left:0;top:0;width:44px;height:44px;z-index:2;pointer-events:none;transition:transform .6s var(--ease);filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.tour-hand svg{width:100%;height:100%;transition:transform .15s}
+.tour-hand.tap svg{transform:scale(.82)}
+.tour-hand::after{content:"";position:absolute;left:9px;top:-3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--accent2);opacity:0}
+.tour-hand.tap::after{animation:tapr .5s ease-out}
+@keyframes tapr{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(2.6)}}
+.tour-tip{position:fixed;left:16px;right:16px;max-width:420px;margin-inline:auto;background:#141a18;border:1px solid rgba(255,122,26,.5);border-radius:16px;padding:14px 16px;display:grid;gap:6px;box-shadow:0 20px 50px -10px #000;transition:top .55s var(--ease),opacity .3s}
+.tour-tip b{font:800 20px/1.05 var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--accent2)}
+.tour-tip p{margin:0;font:500 14px/1.4 var(--body);color:var(--ink)}
+.tour-btns{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px}
+.tour-btns button{border:1px solid var(--line2);background:transparent;color:var(--muted);border-radius:999px;padding:8px 14px;font:700 13px var(--body);cursor:pointer}
+.tour-btns button.go{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink);border:0}
+.tour-dots{display:flex;gap:5px}.tour-dots i{width:7px;height:7px;border-radius:50%;background:var(--line2)}.tour-dots i.on{background:var(--accent)}
 .modesw{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg2);border:1px solid var(--line2)}
 .modesw button{border:0;background:transparent;color:var(--muted);font:700 12px var(--body);letter-spacing:.02em;padding:8px 13px;border-radius:999px;cursor:pointer;transition:all .3s var(--ease)}
 .modesw button[aria-pressed="true"]{background:linear-gradient(160deg,var(--accent2),var(--accent));color:var(--accent-ink)}
@@ -460,7 +490,8 @@ body.simple-mode .app{padding-bottom:40px}
       <div class="logo" aria-hidden="true"><i class="s2"></i><i class="s2"></i><i></i><i class="s2"></i><i></i></div>
       <div><b>Quantificador</b><small>de obra</small></div>
     </div>
-    <div class="modesw" role="group" aria-label="Modo"><button data-appmode="simples" aria-pressed="true">Simples</button><button data-appmode="completo" aria-pressed="false">Completo</button></div>
+    <div class="topr"><button class="helpbtn" id="helpBtn" aria-label="Como usar">?</button>
+    <div class="modesw" role="group" aria-label="Modo"><button data-appmode="simples" aria-pressed="true">Simples</button><button data-appmode="completo" aria-pressed="false">Completo</button></div></div>
   </header>
 
   <nav class="tabbar" role="tablist" id="tabbar">
@@ -503,6 +534,7 @@ body.simple-mode .app{padding-bottom:40px}
   <div class="draw-top"><h3>Desenhar a área</h3><div class="draw-info" id="drawInfo"></div></div>
   <div class="draw-stage"><svg id="drawSvg" viewBox="0 0 20 20" aria-label="Quadrícula para desenhar a área"></svg></div>
   <div class="draw-bar">
+    <div class="draw-meas" id="drawMeas"></div>
     <p class="draw-hint">Toque para marcar cada canto · arraste um canto para o mover · toque num lado para inserir um canto</p>
     <div class="draw-row" id="drawGrid"><button data-g="10">10 m</button><button data-g="20">20 m</button><button data-g="50">50 m</button><button data-g="100">100 m</button></div>
     <div class="draw-row"><button id="drawUndo">Desfazer</button><button id="drawDel">Apagar canto</button><button id="drawRect">Rectângulo</button><button id="drawClear">Limpar</button></div>
@@ -854,18 +886,84 @@ function opsHTML(k, r) {
 function refreshSpv(k, r) { const el = document.querySelector(`[data-spv="${r.id}"]`); if (!el) return; const g = floorGeom(r); el.innerHTML = (g.pts.length ? shapeSVG(g) : '') + (g.err ? `<p class="warn">${g.err}</p>` : ''); }
 
 /* ---------- editor de desenho (tocar nos cantos) ---------- */
-const DR = { k: null, id: null, pts: [], G: 20, sel: -1, hist: [], drag: -1 };
+const DR = { k: null, id: null, pts: [], G: 20, sel: -1, hist: [], drag: -1, fixD: new Set() };
 const snapStep = G => G <= 10 ? .1 : G <= 20 ? .25 : G <= 50 ? .5 : 1;
 function openDraw(k, id) {
   const r = S[k].areas.find(a => a.id === id); if (!r) return;
-  DR.k = k; DR.id = id; DR.pts = (r.pts || []).map(p => [...p]); DR.sel = -1; DR.hist = [];
+  DR.k = k; DR.id = id; DR.pts = (r.pts || []).map(p => [...p]); DR.sel = -1; DR.hist = []; DR.fixD = new Set(r.fixD || []);
   const mx = DR.pts.length ? Math.max(...DR.pts.flat()) : 0; DR.G = r.G || [10, 20, 50, 100].find(g => g >= mx * 1.15) || 100;
   $('draw').hidden = false; document.body.classList.add('drawing'); renderDraw();
 }
 function closeDraw(save) {
-  if (save) { const r = S[DR.k].areas.find(a => a.id === DR.id); if (r) { if ((r.pts || []).length !== DR.pts.length) r.lsides = null; r.pts = DR.pts.map(p => [...p]); r.G = DR.G; const row = document.querySelector(`.area[data-id="${r.id}"]`); if (row) row.querySelector('.af-wrap').innerHTML = fieldsHTML(DR.k, r); update(DR.k); } }
+  if (save) { const r = S[DR.k].areas.find(a => a.id === DR.id); if (r) { if ((r.pts || []).length !== DR.pts.length) r.lsides = null; r.pts = DR.pts.map(p => [...p]); r.G = DR.G; r.fixD = [...DR.fixD]; const row = document.querySelector(`.area[data-id="${r.id}"]`); if (row) row.querySelector('.af-wrap').innerHTML = fieldsHTML(DR.k, r); update(DR.k); } }
   $('draw').hidden = true; document.body.classList.remove('drawing');
 }
+/* medidas do desenho: lados + diagonais a partir do canto A (como se mede no terreno) */
+const LETTER = i => String.fromCharCode(65 + (i % 26)) + (i >= 26 ? Math.floor(i / 26) : '');
+const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+const signedArea = P => P.reduce((t, p, i) => { const q = P[(i + 1) % P.length]; return t + p[0] * q[1] - q[0] * p[1]; }, 0) / 2;
+function measOf(P) { const n = P.length, sides = P.map((p, i) => dist(p, P[(i + 1) % n])), diags = []; for (let j = 2; j <= n - 2; j++) diags.push(dist(P[0], P[j])); return { sides, diags }; }
+function anglesOf(P) {
+  const n = P.length, o = Math.sign(signedArea(P)) || 1;
+  return P.map((b, i) => { const a = P[(i - 1 + n) % n], c = P[(i + 1) % n], u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]];
+    const turn = Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1]) * 180 / Math.PI * o; return 180 - turn; });
+}
+// reconstrói a forma a partir dos lados e das diagonais (triângulos a partir de A); mantém A e a direcção de A→B.
+// Diagonais que o utilizador não escreveu ajustam-se para manter o ângulo do canto (e ficar possível).
+function rebuildShape(P, sides, diags, fixed) {
+  const n = P.length; if (n < 3) return null;
+  const rr = [0, sides[0]];
+  const L = dist(P[0], P[1]) || 1, Q = [[...P[0]], [P[0][0] + (P[1][0] - P[0][0]) / L * rr[1], P[0][1] + (P[1][1] - P[0][1]) / L * rr[1]]];
+  for (let i = 1; i <= n - 2; i++) {
+    let R0;
+    if (i + 1 === n - 1) R0 = sides[n - 1];
+    else if (!fixed || fixed.has(i - 1)) R0 = diags[i - 1];
+    else {
+      const a = rr[i], b = sides[i], u = [P[0][0] - P[i][0], P[0][1] - P[i][1]], v = [P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]];
+      const th = Math.acos(Math.max(-1, Math.min(1, (u[0] * v[0] + u[1] * v[1]) / ((Math.hypot(...u) * Math.hypot(...v)) || 1))));
+      let lo = Math.abs(a - b), hi = a + b;
+      if (i + 1 === n - 2) { lo = Math.max(lo, Math.abs(sides[n - 2] - sides[n - 1])); hi = Math.min(hi, sides[n - 2] + sides[n - 1]); }
+      R0 = Math.sqrt(Math.max(0, a * a + b * b - 2 * a * b * Math.cos(th)));
+      if (hi > lo) { const e = (hi - lo) * .02; R0 = Math.min(hi - e, Math.max(lo + e, R0)); }
+    }
+    rr[i + 1] = R0;
+    const A = Q[0], B = Q[i], R1 = sides[i], dx = B[0] - A[0], dy = B[1] - A[1], dd = Math.hypot(dx, dy);
+    if (!(dd > 1e-9) || !(R0 > 0) || !(R1 > 0)) return null;
+    const a = (R0 * R0 - R1 * R1 + dd * dd) / (2 * dd), h2 = R0 * R0 - a * a;
+    if (h2 < -1e-6 * Math.max(1, R0 * R0)) return null;
+    const h = Math.sqrt(Math.max(0, h2)), mx = A[0] + a * dx / dd, my = A[1] + a * dy / dd;
+    const o = (P[i][0] - P[0][0]) * (P[i + 1][1] - P[0][1]) - (P[i][1] - P[0][1]) * (P[i + 1][0] - P[0][0]);
+    Q.push(o >= 0 ? [mx - h * dy / dd, my + h * dx / dd] : [mx + h * dy / dd, my - h * dx / dd]);
+  }
+  return Q;
+}
+function fitDraw(Q) { // encaixa a forma na quadrícula (aumenta a quadrícula se for preciso)
+  const xs = Q.map(p => p[0]), ys = Q.map(p => p[1]), w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), m = Math.max(w, h);
+  if (m * 1.12 > DR.G) DR.G = [10, 20, 50, 100, 200, 500].find(g => g >= m * 1.12) || Math.ceil(m * 1.12 / 100) * 100;
+  const pad = DR.G * .05, sx = Math.min(...xs) < 0 || Math.max(...xs) > DR.G ? pad - Math.min(...xs) : 0, sy = Math.min(...ys) < 0 || Math.max(...ys) > DR.G ? pad - Math.min(...ys) : 0;
+  return Q.map(p => [+(p[0] + sx).toFixed(4), +(p[1] + sy).toFixed(4)]);
+}
+function renderMeas() {
+  const P = DR.pts, n = P.length, box = $('drawMeas');
+  if (n < 3) { box.innerHTML = ''; return; }
+  const { sides, diags } = measOf(P), ang = anglesOf(P);
+  const inp = (id, v, lbl, cls) => `<label class="field${cls ? ' ' + cls : ''}"><span>${lbl}</span>${numIn(id, v.toFixed(2), 'm', 0, '', 'data-meas="' + id + '"')}</label>`;
+  box.innerHTML = `<div class="dm-t">Medidas<small>escreva o que mediu no terreno</small></div>
+    <div class="dm-g">${sides.map((v, i) => inp('ds' + i, v, `Lado ${LETTER(i)}–${LETTER((i + 1) % n)}`)).join('')}</div>
+    ${diags.length ? `<div class="dm-g">${diags.map((v, j) => inp('dd' + j, v, `Diagonal A–${LETTER(j + 2)}${DR.fixD.has(j) ? ' ✓' : ' (calculada)'}`, DR.fixD.has(j) ? 'diag' : '')).join('')}</div>` : ''}
+    <div class="dm-ang">Ângulos: ${ang.map((a, i) => `<b>${LETTER(i)}</b> ${fmt(a, 1)}°`).join(' · ')}</div>
+    <p class="dm-note">${n === 3 ? 'Com 3 lados a forma já fica certa — os ângulos saem das medidas.' : `Só com os lados a forma pode “abrir ou fechar” e a área muda. Meça também ${diags.length === 1 ? 'a diagonal' : 'as diagonais'} a partir do canto A: assim a forma e os ângulos ficam certos.`}</p>`;
+}
+function applyMeas(el) {
+  const v = pf(el.value), P = DR.pts; if (!(v > 0)) { renderMeas(); return; }
+  const m = measOf(P), id = el.dataset.meas, i = +id.slice(2);
+  const fx = new Set(DR.fixD);
+  if (id[1] === 's') m.sides[i] = v; else { m.diags[i] = v; fx.add(i); }
+  const Q = rebuildShape(P, m.sides, m.diags, fx);
+  if (!Q) { toast('Essa medida não fecha com as outras — confira'); renderMeas(); return; }
+  DR.hist.push(P.map(q => [...q])); DR.fixD = fx; DR.pts = fitDraw(Q); DR.sel = -1; renderDraw();
+}
+
 function renderDraw() {
   const G = DR.G, sv = $('drawSvg'), fs = G / 36;
   let grid = '';
@@ -876,12 +974,19 @@ function renderDraw() {
   const P = DR.pts, n = P.length;
   let shape = '';
   if (n >= 3) shape += `<polygon points="${P.map(p => p.join(',')).join(' ')}" fill="rgba(255,122,26,.22)" stroke="none"/>`;
+  for (let j = 2; j <= n - 2; j++) shape += `<line x1="${P[0][0]}" y1="${P[0][1]}" x2="${P[j][0]}" y2="${P[j][1]}" stroke="#FFB23F" stroke-opacity="${DR.fixD.has(j - 2) ? .9 : .35}" stroke-width="1.5" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`;
   for (let i = 0; i < n - (n >= 3 ? 0 : 1); i++) {
     const a = P[i], b = P[(i + 1) % n], closing = i === n - 1;
     shape += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#FF7A1A" stroke-width="3" vector-effect="non-scaling-stroke" ${closing ? 'stroke-dasharray="6 4"' : ''}/>`;
     const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (L > G / 30) shape += `<text x="${(a[0] + b[0]) / 2}" y="${(a[1] + b[1]) / 2 - fs * .4}" font-size="${fs * 1.05}" font-weight="700" text-anchor="middle" fill="#FFF" stroke="#0A0D0C" stroke-width="${fs * .25}" paint-order="stroke" font-family="JetBrains Mono,monospace">${fmt(L, 2)} m</text>`;
   }
+  if (n >= 3) { const cx = P.reduce((t, p) => t + p[0], 0) / n, cy = P.reduce((t, p) => t + p[1], 0) / n, ang = anglesOf(P);
+    P.forEach((p, i) => { const dx = p[0] - cx, dy = p[1] - cy, dd = Math.hypot(dx, dy) || 1, lx = p[0] + dx / dd * fs * 1.5, ly = p[1] + dy / dd * fs * 1.5;
+      shape += `<text x="${lx}" y="${ly + fs * .4}" font-size="${fs * 1.2}" font-weight="800" text-anchor="middle" fill="#5EC8E5" stroke="#0A0D0C" stroke-width="${fs * .25}" paint-order="stroke" font-family="JetBrains Mono,monospace">${LETTER(i)}</text>`;
+      const ix = p[0] - dx / dd * fs * 1.7, iy = p[1] - dy / dd * fs * 1.7;
+      shape += `<text x="${ix}" y="${iy + fs * .3}" font-size="${fs * .8}" text-anchor="middle" fill="#8D9892" font-family="JetBrains Mono,monospace">${fmt(ang[i], 0)}°</text>`; }); }
+  else P.forEach((p, i) => { shape += `<text x="${p[0]}" y="${p[1] - fs * .9}" font-size="${fs * 1.2}" font-weight="800" text-anchor="middle" fill="#5EC8E5" font-family="JetBrains Mono,monospace">${LETTER(i)}</text>`; });
   P.forEach((p, i) => { shape += `<circle cx="${p[0]}" cy="${p[1]}" r="${G / (i === DR.sel ? 38 : 55)}" fill="${i === DR.sel ? '#FFB23F' : '#0A0D0C'}" stroke="#FFB23F" stroke-width="2" vector-effect="non-scaling-stroke"/>`; });
   sv.setAttribute('viewBox', `${-G * .07} ${-G * .07} ${G * 1.1} ${G * 1.1}`);
   sv.innerHTML = `<rect x="0" y="0" width="${G}" height="${G}" fill="#0F1413"/>${grid}${shape}`;
@@ -889,6 +994,7 @@ function renderDraw() {
   $('drawInfo').innerHTML = n >= 3 ? `<b>${fmt(A, 2)} m²</b><span>${n} cantos · perímetro ${fmt(per, 2)} m</span>` : `<b>${n}/3</b><span>toque na quadrícula para marcar os cantos</span>`;
   document.querySelectorAll('#drawGrid button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.g === G));
   $('drawDel').disabled = DR.sel < 0; $('drawUndo').disabled = !DR.hist.length;
+  if (DR.drag < 0 && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#drawMeas'))) renderMeas();
 }
 function drawPt(e) { const sv = $('drawSvg'), m = sv.getScreenCTM().inverse(), p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m), st = snapStep(DR.G);
   return [Math.min(DR.G, Math.max(0, Math.round(p.x / st) * st)), Math.min(DR.G, Math.max(0, Math.round(p.y / st) * st))].map(v => +v.toFixed(3)); }
@@ -896,7 +1002,7 @@ function initDraw() {
   const sv = $('drawSvg');
   sv.addEventListener('pointerdown', e => {
     e.preventDefault(); const p = drawPt(e), G = DR.G, near = DR.pts.findIndex(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < G / 22);
-    DR.hist.push(DR.pts.map(q => [...q]));
+    DR.hist.push(DR.pts.map(q => [...q])); DR.fixD = new Set();
     if (near >= 0) { DR.sel = near; DR.drag = near; }
     else {
       // tocar perto de um lado insere um canto nesse lado; senão acrescenta no fim
@@ -909,14 +1015,16 @@ function initDraw() {
     buzz(); renderDraw();
   });
   sv.addEventListener('pointermove', e => { if (DR.drag < 0) return; DR.pts[DR.drag] = drawPt(e); renderDraw(); });
-  const up = () => { DR.drag = -1; }; sv.addEventListener('pointerup', up); sv.addEventListener('pointercancel', up);
+  const up = () => { if (DR.drag >= 0) { DR.drag = -1; renderMeas(); } }; sv.addEventListener('pointerup', up); sv.addEventListener('pointercancel', up);
+  $('drawMeas').addEventListener('change', e => { if (e.target.dataset.meas) applyMeas(e.target); });
+  $('drawMeas').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.meas) { e.preventDefault(); e.target.blur(); } });
   $('draw').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.g) { DR.G = +b.dataset.g; renderDraw(); }
     else if (b.id === 'drawUndo' && DR.hist.length) { DR.pts = DR.hist.pop(); DR.sel = -1; renderDraw(); }
-    else if (b.id === 'drawDel' && DR.sel >= 0) { DR.hist.push(DR.pts.map(q => [...q])); DR.pts.splice(DR.sel, 1); DR.sel = -1; renderDraw(); }
-    else if (b.id === 'drawClear') { DR.hist.push(DR.pts.map(q => [...q])); DR.pts = []; DR.sel = -1; renderDraw(); }
-    else if (b.id === 'drawRect') { DR.hist.push(DR.pts.map(q => [...q])); const s = DR.G * .1, e2 = DR.G * .7; DR.pts = [[s, s], [e2, s], [e2, DR.G * .55], [s, DR.G * .55]]; DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawDel' && DR.sel >= 0) { DR.hist.push(DR.pts.map(q => [...q])); DR.fixD = new Set(); DR.pts.splice(DR.sel, 1); DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawClear') { DR.hist.push(DR.pts.map(q => [...q])); DR.fixD = new Set(); DR.pts = []; DR.sel = -1; renderDraw(); }
+    else if (b.id === 'drawRect') { DR.hist.push(DR.pts.map(q => [...q])); DR.fixD = new Set(); const s = DR.G * .1, e2 = DR.G * .7; DR.pts = [[s, s], [e2, s], [e2, DR.G * .55], [s, DR.G * .55]]; DR.sel = -1; renderDraw(); }
     else if (b.id === 'drawOk') closeDraw(true);
     else if (b.id === 'drawCancel') closeDraw(false);
     buzz();
@@ -1405,7 +1513,7 @@ function calcPieces(k) {
     shapes: s.areas.map((r, i) => ({ idx: i, pts: floorGeom(r).pts, lanc: s.lancil === 'com' ? (() => { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.flatMap((e, j) => on[j] ? e.segs : []); })() : [], cuts: (r.cuts || []).map(c => ({ circ: (CUTS[c.t] || {}).circ ? 1 : 0, a: pf(c.a), b: pf(c.b), q: Math.max(0, Math.round(pf(c.q))) })) })) };
   return {
     value: total, unit: c.piece, label: c.label, tag: perda > 0 ? `+${fmt(perda)}% perdas` : 'sem perdas',
-    sub: `<span><b>${nA}</b> ${nA === 1 ? 'área' : 'áreas'}</span><span><b>${fmt(net, 1)}</b> m²</span><span><b>${fmt(pm2, 1)}</b> /m²</span><span>${esc(prod.id === 'free' ? 'por m²' : prod.name + (prod.model ? ` ${gtxt}` : ''))}</span>`,
+    sub: `<span><b>${nA}</b> ${(c.areaWord || ['área', 'áreas'])[nA === 1 ? 0 : 1]}</span><span><b>${fmt(net, 1)}</b> m²</span><span><b>${fmt(pm2, 1)}</b> /m²</span><span>${esc(prod.id === 'free' ? 'por m²' : prod.name + (prod.model ? ` ${gtxt}` : ''))}</span>`,
     price: valor, rows, text, viz, per, total: net, gross, byM2, pm2, prod
   };
 }
@@ -1578,6 +1686,7 @@ function setMode(m, first) {
     TABS.forEach(s => $('sec-' + s).hidden = true);
     const el = $('sec-simples'); el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     updateSimple(true);
+    if (booted) maybeTour('simples');
     if (!first) { buzz(); scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); }
     onScroll();
   } else {
@@ -1914,6 +2023,7 @@ function goTab(name, first) {
   store.set('qo-tab', name);
   if (results[name]) paintHero(results[name], name);
   redraw(name); onScroll();
+  if (booted) maybeTour(name);
 }
 document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => goTab(b.dataset.tab)));
 
@@ -1934,6 +2044,68 @@ document.addEventListener('click', e => {
   if (c) copy(results[c.dataset.copy].text);
   if (s) { const txt = results[s.dataset.share].text; if (navigator.share) navigator.share({ text: txt }).catch(err => { if (err && err.name !== 'AbortError') copy(txt); }); else copy(txt); }
 });
+
+/* ---------- demonstração "Como usar" (dedo a escrever nas medidas) ---------- */
+const TOUR_DEMO = { muros: ['10', '2'], grelhas: ['3', '1.2'], pave: ['6', '4'], simples: ['5', '4'] };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const HAND = '<svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-.5V8.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6.5 6.5 0 0 1-6.5 6.5h-.6a6 6 0 0 1-4.6-2.2L4 16.2a1.6 1.6 0 0 1 2.4-2.1L9 16.5" fill="#F3F1EA" stroke="#1A0E04" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+let touring = false;
+async function runTour(k) {
+  if (touring || !k) return; touring = true; store.set('qo-tour-' + k, 1);
+  const sec = $('sec-' + k), vis = el => el && el.offsetParent !== null;
+  const firstCard = sec.querySelector('.card');
+  const inputs = [...(k === 'simples' ? firstCard : firstCard.querySelector('.area')).querySelectorAll('input[type=number]')].filter(vis).slice(0, 2);
+  const prodEl = k === 'simples' ? $('sq-pieces') : $('chips-' + k);
+  const orig = inputs.map(i => i.value);
+  const ov = document.createElement('div'); ov.className = 'tour';
+  ov.innerHTML = `<div class="tour-ring"></div><div class="tour-hand">${HAND}</div><div class="tour-tip"><b></b><p></p><div class="tour-btns"><button data-t="skip">Saltar</button><span class="tour-dots">${'<i></i>'.repeat(4)}</span><button class="go" data-t="next" hidden>Começar</button></div></div>`;
+  document.body.appendChild(ov);
+  const ring = ov.querySelector('.tour-ring'), hand = ov.querySelector('.tour-hand'), tip = ov.querySelector('.tour-tip');
+  let stop = false, done; const finished = new Promise(r => done = r);
+  ov.addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { stop = true; done(); } });
+  // o destaque, o texto e o dedo seguem o elemento mesmo que a página se mexa
+  let ringEl = null, handEl = null, raf = 0;
+  const follow = () => {
+    if (ringEl) { const r = ringEl.getBoundingClientRect(), pad = 8;
+      Object.assign(ring.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+      const below = r.bottom + pad + tip.offsetHeight + 24 < innerHeight;
+      tip.style.top = (below ? r.bottom + pad + 14 : Math.max(12, r.top - pad - 14 - tip.offsetHeight)) + 'px'; }
+    if (handEl) { const r = handEl.getBoundingClientRect(); hand.style.transform = `translate(${r.left + Math.min(r.width * .45, 90) - 14}px,${r.top + r.height * .55}px)`; }
+    raf = requestAnimationFrame(follow);
+  };
+  follow();
+  const step = async (el, n, title, text) => {
+    if (stop || !el) return;
+    el.scrollIntoView({ block: 'center', behavior: RM ? 'auto' : 'smooth' }); await sleep(RM ? 50 : 520);
+    ringEl = el;
+    tip.querySelector('b').textContent = title; tip.querySelector('p').textContent = text;
+    tip.querySelectorAll('.tour-dots i').forEach((d, i) => d.classList.toggle('on', i === n));
+  };
+  const handTo = async el => { if (stop || !el) return; handEl = el; await sleep(RM ? 50 : 750); };
+  const tap = async () => { if (stop) return; hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); buzz(); await sleep(350); };
+  const type = async (inp, val) => { if (stop) return; await handTo(inp); await tap(); inp.value = '';
+    for (const ch of val) { if (stop) return; inp.value += ch; inp.dispatchEvent(new Event('input', { bubbles: true })); await sleep(RM ? 20 : 190); } await sleep(250); };
+  hand.style.transform = `translate(${innerWidth / 2}px,${innerHeight + 40}px)`;
+  const origSQ = { pl: SQ.pl, pw: SQ.pw };
+  const demo = TOUR_DEMO[k] || ['5', '4'], L = k === 'muros' ? ['comprimento', 'altura'] : k === 'simples' ? ['comprimento', 'largura'] : ['comprimento', k === 'grelhas' ? 'altura' : 'largura'];
+  await step(inputs[0] && inputs[0].closest('.fields, .area-fields') || firstCard, 0, '1 · As medidas', `Escreva o ${L[0]} e a ${L[1]} do espaço, em metros. Pode juntar mais partes com o botão “+”.`);
+  for (let i = 0; i < inputs.length; i++) await type(inputs[i], demo[i]);
+  await step(prodEl, 1, k === 'simples' ? '2 · A peça' : '2 · O produto', k === 'simples' ? 'Escolha a peça (ou escreva o tamanho dela) e a junta.' : 'Escolha a peça. Mais abaixo acerta a junta e as perdas.');
+  const selChip = prodEl && (prodEl.querySelector('[aria-pressed="true"]') || prodEl.querySelector('button'));
+  if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); await sleep(300); }
+  await step($('hero'), 2, '3 · O resultado', 'Aqui aparece logo quantas peças precisa. No fim do ecrã pode enviar o resumo pelo WhatsApp.');
+  await handTo($('odo')); await tap(); await sleep(stop ? 0 : 900);
+  if (!stop) { tip.querySelector('[data-t="next"]').hidden = false; tip.querySelector('[data-t="skip"]').hidden = true;
+    await step($('hero'), 3, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
+    handEl = null; hand.style.transform = `translate(${innerWidth / 2}px,${innerHeight + 40}px)`; await finished; }
+  cancelAnimationFrame(raf);
+  cancelAnimationFrame(raf);
+  if (k === 'simples') { Object.assign(SQ, origSQ); $('sq-pl').value = SQ.pl ?? ''; $('sq-pw').value = SQ.pw ?? ''; }
+  inputs.forEach((inp, i) => { inp.value = orig[i]; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  ov.remove(); touring = false; scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
+}
+const maybeTour = k => { if (!store.get('qo-tour-' + k, 0)) setTimeout(() => { if (tab === k && !document.body.classList.contains('drawing')) runTour(k); }, 900); };
+$('helpBtn').addEventListener('click', () => runTour(tab));
 
 /* splash + arranque */
 $('splash-t').innerHTML = [...'Quantificador'].map((ch, i) => `<span style="animation-delay:${.45 + i * .035}s">${ch}</span>`).join('');
