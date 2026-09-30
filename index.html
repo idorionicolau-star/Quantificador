@@ -68,7 +68,7 @@ body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;mi
 @keyframes fade{to{opacity:1}}
 
 /* ---------- estrutura ---------- */
-.app{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding-inline:16px;padding-bottom:120px}
+.app{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding-inline:16px;padding-bottom:40px}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding-block:16px 10px}
 .brand{display:flex;align-items:center;gap:10px}
 .logo{display:grid;grid-template-columns:repeat(4,7px);gap:2px}
@@ -180,7 +180,6 @@ body.focusing main .card.is-focus{border-color:rgba(255,122,26,.55);box-shadow:0
 .field:focus-within > span,.af:focus-within > span{color:var(--accent2)}
 .num:focus-within{background:#1c1510}
 .num:focus-within input{color:#fff}
-body.focusing .tabbar{transform:translate(-50%,170%);opacity:0;pointer-events:none}
 .tabbar{transition:transform .35s var(--ease),opacity .25s}
 body.focusing .hero{box-shadow:0 20px 60px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,122,26,.35),0 0 50px -10px var(--glow)}
 
@@ -258,8 +257,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 @keyframes rip{to{transform:scale(3.5);opacity:0}}
 
 /* tab bar flutuante */
-.tabbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:grid;grid-template-columns:repeat(3,1fr);
-  width:min(440px,calc(100% - 32px));padding:6px;border-radius:22px;background:rgba(20,26,24,.78);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+.tabbar{position:relative;z-index:30;display:grid;grid-template-columns:repeat(3,1fr);
+  width:100%;margin:4px 0 14px;padding:6px;border-radius:22px;background:rgba(20,26,24,.78);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
   border:1px solid var(--line2);box-shadow:0 20px 50px -10px rgba(0,0,0,.8)}
 .tabbar .ind{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px)/3);border-radius:16px;background:linear-gradient(160deg,var(--accent2),var(--accent));box-shadow:0 8px 24px -8px var(--glow);transition:transform .5s var(--spring)}
 .tabbar button{position:relative;z-index:1;border:0;background:none;color:var(--muted);display:grid;justify-items:center;gap:3px;padding:9px 4px;cursor:pointer;transition:color .3s}
@@ -348,8 +347,8 @@ body.drawing{overflow:hidden}
 .dock-mini .flat-floor{width:88%}
 
 /* ---------- v3: 4 separadores, várias áreas, produtos ---------- */
-.tabbar{grid-template-columns:repeat(4,1fr);width:min(500px,calc(100% - 24px))}
-.tabbar .ind{width:calc((100% - 12px)/4)}
+.tabbar{grid-template-columns:repeat(3,1fr)}
+.tabbar .ind{width:calc((100% - 12px)/3)}
 .tabbar button span{font-size:12px;letter-spacing:.08em}
 
 .areas{display:grid;gap:10px}
@@ -450,7 +449,7 @@ body.simple-mode .app{padding-bottom:40px}
       <i class="w2" style="animation-delay:.44s"></i><i class="w2" style="animation-delay:.5s"></i>
     </div>
     <h1 id="splash-t"></h1>
-    <p>Muros · Grelhas · Pavê · Lajes</p>
+    <p>Muros · Grelhas · Pavê</p>
     <div class="loadbar"><b></b></div>
   </div>
 </div>
@@ -463,6 +462,16 @@ body.simple-mode .app{padding-bottom:40px}
     </div>
     <div class="modesw" role="group" aria-label="Modo"><button data-appmode="simples" aria-pressed="true">Simples</button><button data-appmode="completo" aria-pressed="false">Completo</button></div>
   </header>
+
+  <nav class="tabbar" role="tablist" id="tabbar">
+    <span class="ind" id="ind"></span>
+    <button role="tab" aria-selected="true" data-tab="muros" id="t-muros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="4" width="9" height="5" rx="1"/><rect x="13" y="4" width="9" height="5" rx="1"/><rect x="7" y="11" width="10" height="5" rx="1"/><rect x="2" y="18" width="9" height="3" rx="1"/><rect x="13" y="18" width="9" height="3" rx="1"/></svg><span>Muros</span></button>
+    <button role="tab" aria-selected="false" data-tab="grelhas" id="t-grelhas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>Grelhas</span></button>
+    <button role="tab" aria-selected="false" data-tab="pave" id="t-pave">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M7.5 5.5l9 5M16.5 5.5l-9 5"/></svg><span>Pavê</span></button>
+  </nav>
 
   <div class="layout">
     <aside class="hero-wrap" id="heroWrap">
@@ -484,17 +493,6 @@ body.simple-mode .app{padding-bottom:40px}
   </div>
 </div>
 
-<nav class="tabbar" role="tablist" id="tabbar">
-  <span class="ind" id="ind"></span>
-  <button role="tab" aria-selected="true" data-tab="muros" id="t-muros">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="4" width="9" height="5" rx="1"/><rect x="13" y="4" width="9" height="5" rx="1"/><rect x="7" y="11" width="10" height="5" rx="1"/><rect x="2" y="18" width="9" height="3" rx="1"/><rect x="13" y="18" width="9" height="3" rx="1"/></svg><span>Muros</span></button>
-  <button role="tab" aria-selected="false" data-tab="grelhas" id="t-grelhas">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>Grelhas</span></button>
-  <button role="tab" aria-selected="false" data-tab="pave" id="t-pave">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M7.5 5.5l9 5M16.5 5.5l-9 5"/></svg><span>Pavê</span></button>
-  <button role="tab" aria-selected="false" data-tab="lajes" id="t-lajes">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8l9-4 9 4v8l-9 4-9-4V8z"/><path d="M3 8l9 4 9-4M12 12v8"/></svg><span>Lajes</span></button>
-</nav>
 
 <div class="dock" id="dock" aria-hidden="true">
   <div class="dock-mini" id="dockMini"></div>
@@ -530,7 +528,7 @@ let uid = 0; const nid = () => 'a' + (++uid);
 /* ================= configuração ================= */
 const CFG = {
   muros: { kind: 'wall', pattern: 'bond', unit: 'blocos', label: 'Blocos necessários', piece: 'blocos',
-    title: 'Muros &amp; <em>paredes</em>', lede: 'Some quantas partes do muro quiser', vizLabel: 'Vista do muro', jUnit: 'cm', jDef: 1, junta: 'com', mortar: true, freeDef: 12.5,
+    title: 'Muros &amp; <em>paredes</em>', lede: 'Some quantas partes do muro quiser', areaTitle: 'Partes do muro', addLabel: 'Adicionar parte do muro', areaWord: ['parte', 'partes'], vizLabel: 'Vista do muro', jUnit: 'cm', jDef: 1, junta: 'com', mortar: true, freeDef: 12.5,
     products: [
       { id: 'b10', name: 'Bloco 10', sub: '10×20×40 cm', L: .40, W: .20, t: .10 },
       { id: 'b15', name: 'Bloco 15', sub: '15×20×40 cm', L: .40, W: .20, t: .15 },
@@ -561,12 +559,12 @@ const CFG = {
     areas: [{ name: '', mode: 'laje', a: '', b: '', c: '', q: 1 }],
     note: 'Volume seco × 1,54 e cimento a 1 440 kg/m³. Valores aproximados; confirme em obra.' }
 };
-const TABS = ['muros', 'grelhas', 'pave', 'lajes'];
+const TABS = ['muros', 'grelhas', 'pave']; // lajes: retiradas por agora (o código fica para voltar)
 const wallOpen = r => opsArea(r) + (r.ops ? 0 : pf(r.d));
 const S = {};
 TABS.forEach(k => {
   const c = CFG[k];
-  S[k] = { sel: c.sel, junta: c.junta, j: c.jDef, perda: 5, preco: '', free: c.freeDef, traco: '1,2,3', gsize: '20', gw: 20, gh: 20, lancil: 'sem', lancilLen: 1, areiaEsp: 4,
+  S[k] = { sel: c.sel, junta: c.junta, j: c.jDef, perda: 5, perdaOn: 'com', preco: '', free: c.freeDef, traco: '1,2,3', gsize: '20', gw: 20, gh: 20, lancil: 'sem', lancilLen: 1, areiaEsp: 4,
     areas: c.areas.map(a => ({ id: nid(), q: 1, c: 10, d: 0, m: '', v: '', ...a })),
     custom: store.get('qo-prod-' + k, []) };
 });
@@ -597,6 +595,15 @@ const shareBtns = k => `<div class="actions">
   <button class="btn primary" data-share="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg>Enviar resumo</button>
   <button class="btn ghost" data-copy="${k}" aria-label="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>`;
 
+function perdaHTML(k) {
+  const s = S[k];
+  return `<div class="extras"><div class="ttl">Perdas / quebras</div>
+    <div class="seg" data-group="perdaOn" data-k="${k}"><span class="thumb"></span>
+      <button aria-pressed="${s.perdaOn !== 'sem'}" data-v="com">Com perdas</button>
+      <button aria-pressed="${s.perdaOn === 'sem'}" data-v="sem">Sem perdas</button></div>
+    <div class="reveal${s.perdaOn === 'sem' ? ' closed' : ''}" id="${k}-perdabox"><div><label class="field"><span>Percentagem de perdas</span>${numIn(k + '-perda', s.perda, '%', 1, '', `data-s="perda"`)}</label></div></div></div>`;
+}
+const perdaOf = s => s.perdaOn === 'sem' ? 0 : pf(s.perda);
 function secHTML(k) {
   const c = CFG[k], s = S[k];
   const tog = VIEW[k] ? `<div class="viewtog" data-view="${k}"><button data-v="2d" aria-pressed="${VIEW[k] === '2d'}">2D</button><button data-v="3d" aria-pressed="${VIEW[k] === '3d'}">3D</button></div>` : '';
@@ -613,7 +620,7 @@ function secHTML(k) {
         <button class="chip" aria-pressed="false" data-v="1,2,4"><b>1 : 2 : 4</b><small>sapatas, pisos</small></button>
         <button class="chip" aria-pressed="false" data-v="1,3,6"><b>1 : 3 : 6</b><small>limpeza, enchimento</small></button>
       </div>
-      <label class="field"><span>Perdas</span>${numIn(k + '-perda', s.perda, '%', 1, '', `data-s="perda"`)}</label>
+      ${perdaHTML(k)}
       <label class="field"><span>Preço do saco de cimento (opcional)</span>${numIn(k + '-preco', '', 'MT', 0, 'ex.: 520', `data-s="preco"`)}</label>
     </div>`;
   } else {
@@ -636,9 +643,9 @@ function secHTML(k) {
       </div></div>
       <div class="fields">
         <label class="field" id="${k}-jfield"><span>Junta</span>${numIn(k + '-j', s.j, c.jUnit, c.jUnit === 'cm' ? .5 : 1, '', `data-s="j"`)}</label>
-        <label class="field"><span>Perdas</span>${numIn(k + '-perda', s.perda, '%', 1, '', `data-s="perda"`)}</label>
       </div>
       <p class="rate-note" id="${k}-rate"></p>
+      ${perdaHTML(k)}
       <label class="field"><span>${c.kind === 'floor' ? 'Preço por m²' : 'Preço por ' + c.piece.replace(/s$/, '')} (opcional)</span>${numIn(k + '-preco', '', c.kind === 'floor' ? 'MT/m²' : 'MT', 0, c.kind === 'floor' ? 'ex.: 650' : 'ex.: 38', `data-s="preco"`)}</label>
       ${c.kind === 'floor' ? `<div class="extras"><div class="ttl">Extras do pavê</div>
         <div class="seg" data-group="lancil" data-k="${k}"><span class="thumb"></span><button aria-pressed="true" data-v="sem">Sem lancil</button><button aria-pressed="false" data-v="com">Com lancil (meio-fio)</button></div>
@@ -647,11 +654,10 @@ function secHTML(k) {
     </div>`;
   }
   return `<section class="sec" id="sec-${k}" hidden>
-    <div class="sec-head" style="--i:0"><h2>${c.title}</h2><p>${c.lede}</p></div>
     <div class="card" style="--i:1">
-      <div class="card-title"><i>01</i>${c.kind === 'slab' ? 'Peças a betonar' : 'Áreas'}</div>
+      <div class="card-title"><i>01</i>${c.areaTitle || (c.kind === 'slab' ? 'Peças a betonar' : 'Áreas')}</div>
       <div class="areas" id="areas-${k}"></div>
-      <button class="add" data-add="${k}"><i>+</i>Adicionar ${c.kind === 'slab' ? 'peça' : 'área'}</button>
+      <button class="add" data-add="${k}"><i>+</i>${c.addLabel || 'Adicionar ' + (c.kind === 'slab' ? 'peça' : 'área')}</button>
       <div class="area-total"><span id="tn-${k}">2 áreas</span><b id="tt-${k}">0</b></div>
     </div>
     ${prod}
@@ -1327,7 +1333,7 @@ function areaOf(k, r) {
 }
 const opsTxt = r => { const l = (r.ops || []).filter(o => opArea(o) > 0); return l.length ? ' − ' + l.map(o => `${Math.round(pf(o.q))}× ${(OPS[o.t] || OPS.outro).name.toLowerCase()} ${fmt(pf(o.a))}×${fmt(pf(o.b))}`).join(', ') + ` (${fmt(opsArea(r))} m²)` : ''; };
 function areaLine(k, r, i) {
-  const n = r.name || `${CFG[k].kind === 'slab' ? 'Peça' : 'Área'} ${i + 1}`, a = areaOf(k, r);
+  const n = r.name || `${CFG[k].kind === 'slab' ? 'Peça' : CFG[k].areaWord ? 'Parte' : 'Área'} ${i + 1}`, a = areaOf(k, r);
   const kind = CFG[k].kind;
   if (kind === 'slab') {
     const q = Math.max(1, Math.round(pf(r.q) || 1)), qt = q > 1 ? ` × ${q}` : '';
@@ -1355,11 +1361,11 @@ function calcPieces(k) {
   const pm2 = prod.id === 'free' ? pf(s.free) : byM2 ? pf(prod.pm2) : 1 / ((PL + j) * (PW + j));
   const per = s.areas.map(r => areaOf(k, r));
   const net = per.reduce((t, a) => t + a.net, 0), gross = per.reduce((t, a) => t + a.gross, 0);
-  const base = net * pm2, perda = pf(s.perda);
+  const base = net * pm2, perda = perdaOf(s);
   const total = Math.ceil(base * (1 + perda / 100));
   const preco = pf(s.preco);
   const rows = [];
-  s.areas.forEach((r, i) => rows.push([`${i + 1}. ${r.name || 'Área ' + (i + 1)}`, per[i].net, 2, ' m²']));
+  s.areas.forEach((r, i) => rows.push([`${i + 1}. ${r.name || (c.areaWord ? 'Parte ' : 'Área ') + (i + 1)}`, per[i].net, 2, ' m²']));
   rows.push(['Área total', net, 2, ' m²', 1], [`${c.piece[0].toUpperCase() + c.piece.slice(1)} por m²`, pm2, 1, ''], ['Sem perdas', Math.ceil(base), 0, ' ' + c.piece]);
   let mortarTxt = '';
   if (c.mortar && j > 0 && prod.L) {
@@ -1398,7 +1404,7 @@ function calcPieces(k) {
   else viz = { tl: PL || Math.sqrt(1 / Math.max(pm2, .1)), tw: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
     shapes: s.areas.map((r, i) => ({ idx: i, pts: floorGeom(r).pts, lanc: s.lancil === 'com' ? (() => { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.flatMap((e, j) => on[j] ? e.segs : []); })() : [], cuts: (r.cuts || []).map(c => ({ circ: (CUTS[c.t] || {}).circ ? 1 : 0, a: pf(c.a), b: pf(c.b), q: Math.max(0, Math.round(pf(c.q))) })) })) };
   return {
-    value: total, unit: c.piece, label: c.label, tag: `+${fmt(perda)}% perdas`,
+    value: total, unit: c.piece, label: c.label, tag: perda > 0 ? `+${fmt(perda)}% perdas` : 'sem perdas',
     sub: `<span><b>${nA}</b> ${nA === 1 ? 'área' : 'áreas'}</span><span><b>${fmt(net, 1)}</b> m²</span><span><b>${fmt(pm2, 1)}</b> /m²</span><span>${esc(prod.id === 'free' ? 'por m²' : prod.name + (prod.model ? ` ${gtxt}` : ''))}</span>`,
     price: valor, rows, text, viz, per, total: net, gross, byM2, pm2, prod
   };
@@ -1408,7 +1414,7 @@ function calcSlab(k) {
   const per = s.areas.map(r => areaOf(k, r));
   const vol = per.reduce((t, a) => t + a.net, 0);
   const [ci, ar, br] = s.traco.split(',').map(Number);
-  const perda = pf(s.perda), vT = vol * (1 + perda / 100);
+  const perda = perdaOf(s), vT = vol * (1 + perda / 100);
   const seco = vT * 1.54, soma = ci + ar + br;
   const cimKg = seco * ci / soma * 1440, areia = seco * ar / soma, brita = seco * br / soma, agua = cimKg * .5;
   const sacos = Math.ceil(cimKg / 50), preco = pf(s.preco);
@@ -1450,12 +1456,14 @@ function updateSec(k) {
     $(k + '-juntabox').classList.toggle('closed', r.byM2);
     const jf = $(k + '-jfield'); jf.style.opacity = !r.byM2 && s.junta === 'com' ? 1 : .3; $(k + '-j').disabled = r.byM2 || s.junta !== 'com';
     if ($(k + '-llfield')) { $(k + '-llfield').style.opacity = s.lancil === 'com' ? 1 : .35; }
+    $(k + '-perdabox').classList.toggle('closed', s.perdaOn === 'sem');
     $(k + '-rate').innerHTML = r.byM2 ? `Cálculo directo: <b>${fmt(r.pm2, 1)} ${c.piece}/m²</b> (junta já incluída)` : `Pela medida da peça: <b>${fmt(r.pm2, 2)} ${c.piece}/m²</b>`;
     tweenViz(k, r.viz, DRAW[c.kind]);
   } else tweenViz(k, r.viz, drawSlab);
   s.areas.forEach((a, i) => countTo(document.querySelector(`[data-sub="${a.id}"]`), r.per[i].net, c.kind === 'slab' ? 3 : 2, c.kind === 'slab' ? ' m³' : ' m²'));
   const n = s.areas.length;
-  $('tn-' + k).textContent = `${n} ${c.kind === 'slab' ? (n === 1 ? 'peça' : 'peças') : (n === 1 ? 'área' : 'áreas')} · total`;
+  const aw = c.areaWord || (c.kind === 'slab' ? ['peça', 'peças'] : ['área', 'áreas']);
+  $('tn-' + k).textContent = `${n} ${n === 1 ? aw[0] : aw[1]} · total`;
   countTo($('tt-' + k), r.total, c.kind === 'slab' ? 3 : 2, c.kind === 'slab' ? ' m³' : ' m²');
   $('vt-' + k).textContent = fmt(r.total, c.kind === 'slab' ? 2 : 1);
   renderRows('det-' + k, r.rows);
@@ -1469,13 +1477,12 @@ function update(k, immediate) {
 
 function syncGs(k) { const b = $('gsizes'); if (!b) return; b.querySelectorAll('[data-gs]').forEach(x => x.setAttribute('aria-pressed', pf(S[k].gw) == +x.dataset.gs && pf(S[k].gh) == +x.dataset.gs)); }
 /* ================= MODO SIMPLES: espaço + peça + junta ================= */
-const SQ = Object.assign({ modo: 'dim', a: '', b: '', m: '', pl: '', pw: '', j: 0, perda: 5, preco: '', pmode: 'peca' }, store.get('qo-simple', {}), { a: '', b: '', m: '' });
+const SQ = Object.assign({ modo: 'dim', a: '', b: '', m: '', pl: '', pw: '', j: 0, perda: 5, perdaOn: 'com', preco: '', pmode: 'peca' }, store.get('qo-simple', {}), { a: '', b: '', m: '' });
 const PIECES = [['40', '20', 'Bloco 40×20'], ['20', '10', 'Pavê 20×10'], ['20', '20', '20×20'], ['30', '30', '30×30'], ['40', '40', '40×40'], ['60', '60', '60×60']];
 const JUNTAS = [[0, 'Sem junta'], [2, '2 mm'], [3, '3 mm'], [5, '5 mm'], [10, '1 cm'], [15, '1,5 cm']];
 function simpleHTML() {
   const nq = (id, label, unit, ph, step) => `<label class="field"><span>${label}</span>${numIn('sq-' + id, SQ[id] ?? '', unit, step || 0, ph, `data-q="${id}"`)}</label>`;
   return `<section class="sec" id="sec-simples" hidden>
-    <div class="sec-head" style="--i:0"><h2>Cálculo <em>rápido</em></h2><p>Espaço, peça e junta. Só isso.</p></div>
     <div class="card" style="--i:2">
       <div class="card-title"><i>01</i>Tamanho do espaço</div>
       <div class="qseg" data-qgroup="modo"><button data-qv="dim" aria-pressed="${SQ.modo === 'dim'}">Comprimento × largura</button><button data-qv="area" aria-pressed="${SQ.modo === 'area'}">Já sei os m²</button></div>
@@ -1490,7 +1497,10 @@ function simpleHTML() {
     <div class="card" style="--i:4">
       <div class="card-title"><i>03</i>Junta entre peças</div>
       <div class="chips" id="sq-juntas">${JUNTAS.map(([v, n]) => `<button class="chip" data-qj="${v}" aria-pressed="${+SQ.j === v}"><b>${n}</b><small>${v ? 'entre peças' : 'encostadas'}</small></button>`).join('')}</div>
-      <div class="fields">${nq('j', 'Junta (outra medida)', 'mm', '0', 1)}${nq('perda', 'Perdas', '%', '5', 1)}</div>
+      <div class="fields one">${nq('j', 'Junta (outra medida)', 'mm', '0', 1)}</div>
+      <div class="extras"><div class="ttl">Perdas / quebras</div>
+        <div class="qseg" data-qgroup="perdaOn"><button data-qv="com" aria-pressed="${SQ.perdaOn !== 'sem'}">Com perdas</button><button data-qv="sem" aria-pressed="${SQ.perdaOn === 'sem'}">Sem perdas</button></div>
+        <div class="reveal${SQ.perdaOn === 'sem' ? ' closed' : ''}" id="sq-perdabox"><div>${nq('perda', 'Percentagem de perdas', '%', '5', 1)}</div></div></div>
       <div class="qseg" data-qgroup="pmode"><button data-qv="peca" aria-pressed="${SQ.pmode === 'peca'}">Preço por peça</button><button data-qv="m2" aria-pressed="${SQ.pmode === 'm2'}">Preço por m²</button></div>
       ${nq('preco', 'Preço (opcional)', 'MT', '38', 0)}
     </div>
@@ -1506,18 +1516,18 @@ function simpleHTML() {
 }
 function calcSimple() {
   const area = SQ.modo === 'dim' ? pf(SQ.a) * pf(SQ.b) : pf(SQ.m);
-  const L = pf(SQ.pl) / 100, W = pf(SQ.pw) / 100, j = pf(SQ.j) / 1000, perda = pf(SQ.perda), preco = pf(SQ.preco);
+  const L = pf(SQ.pl) / 100, W = pf(SQ.pw) / 100, j = pf(SQ.j) / 1000, perda = SQ.perdaOn === 'sem' ? 0 : pf(SQ.perda), preco = pf(SQ.preco);
   const pm2 = L > 0 && W > 0 ? 1 / ((L + j) * (W + j)) : 0;
   const base = area * pm2, total = Math.ceil(base * (1 + perda / 100)), m2buy = area * (1 + perda / 100);
   const valor = preco > 0 ? (SQ.pmode === 'm2' ? m2buy * preco : total * preco) : 0;
-  const rows = [['Área do espaço', area, 2, ' m²'], ['Peças por m²', pm2, 2, ''], ['Sem perdas', Math.ceil(base), 0, ' peças'], [`Com ${fmt(perda)}% de perdas`, total, 0, ' peças', 1]];
+  const rows = [['Área do espaço', area, 2, ' m²'], ['Peças por m²', pm2, 2, ''], ['Sem perdas', Math.ceil(base), 0, ' peças'], [perda > 0 ? `Com ${fmt(perda)}% de perdas` : 'Total (sem perdas)', total, 0, ' peças', 1]];
   if (SQ.pmode === 'm2') rows.push(['m² a comprar', m2buy, 2, ' m²']);
   if (valor > 0) rows.push(['Valor', valor, 2, ' MT', 1]);
   const peca = L && W ? `${fmt(L * 100)}×${fmt(W * 100)} cm` : '—';
   const jt = j > 0 ? `junta ${fmt(j * 1000)} mm` : 'sem junta';
   const ready = area > 0 && pm2 > 0;
   return {
-    value: total, unit: 'peças', label: 'Peças necessárias', tag: `+${fmt(perda)}% perdas`,
+    value: total, unit: 'peças', label: 'Peças necessárias', tag: perda > 0 ? `+${fmt(perda)}% perdas` : 'sem perdas',
     sub: ready ? `<span><b>${fmt(area, 2)}</b> m²</span><span>peça <b>${peca}</b></span><span>${jt}</span><span><b>${fmt(pm2, 2)}</b> /m²</span>` : '<span>Preencha o espaço e a peça</span>',
     price: valor, rows,
     text: `*Cálculo de peças*\nEspaço: ${SQ.modo === 'dim' ? `${fmt(pf(SQ.a))} × ${fmt(pf(SQ.b))} m = ` : ''}${fmt(area)} m²\nPeça: ${peca} · ${jt}\n${fmt(pm2, 2)} peças/m² · perdas ${fmt(perda)}%\n➡️ *${total.toLocaleString('pt-PT')} peças*` + (valor > 0 ? `\nValor: ${fmtFix(valor, 2)} MT${SQ.pmode === 'm2' ? ` (${fmt(preco)} MT/m² × ${fmt(m2buy)} m²)` : ''}` : ''),
@@ -1549,7 +1559,7 @@ function drawSimple(r) {
 }
 function updateSimple(immediate) {
   const r = calcSimple(); results.simples = r;
-  $('sq-dim').classList.toggle('closed', SQ.modo !== 'dim'); $('sq-area').classList.toggle('closed', SQ.modo !== 'area');
+  $('sq-dim').classList.toggle('closed', SQ.modo !== 'dim'); $('sq-perdabox').classList.toggle('closed', SQ.perdaOn === 'sem'); $('sq-area').classList.toggle('closed', SQ.modo !== 'area');
   $('vt-simples').textContent = fmt(r.area, 2);
   renderRows('det-simples', r.rows); drawSimple(r);
   document.querySelectorAll('#sq-pieces [data-qpiece]').forEach(b => { const [l, w] = b.dataset.qpiece.split('x'); b.setAttribute('aria-pressed', pf(SQ.pl) == +l && pf(SQ.pw) == +w); });
@@ -1748,6 +1758,7 @@ document.addEventListener('click', e => {
     g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     S[k][g.dataset.group] = b.dataset.v; buzz();
     if (g.dataset.group === 'gsize') renderChips(k);
+    if (g.dataset.group === 'perdaOn') setTimeout(placeAll, 0);
     if (g.dataset.group === 'lancil') { S[k].lancil = b.dataset.v; renderAreas(k); }
     if (g.classList.contains('seg')) placeThumb(g);
     update(k);
