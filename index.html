@@ -649,15 +649,15 @@ function secHTML(k) {
   }
   return `<section class="sec" id="sec-${k}" hidden>
     <div class="sec-head" style="--i:0"><h2>${c.title}</h2><p>${c.lede}</p></div>
-    <div class="card viz" style="--i:1">${vizInner}<div class="viz-foot"><span>${c.vizLabel}</span><span><b id="vt-${k}">0</b> ${totLabel}</span></div></div>
-    <div class="card" style="--i:2">
+    <div class="card" style="--i:1">
       <div class="card-title"><i>01</i>${c.kind === 'slab' ? 'Peças a betonar' : 'Áreas'}</div>
       <div class="areas" id="areas-${k}"></div>
       <button class="add" data-add="${k}"><i>+</i>Adicionar ${c.kind === 'slab' ? 'peça' : 'área'}</button>
       <div class="area-total"><span id="tn-${k}">2 áreas</span><b id="tt-${k}">0</b></div>
     </div>
     ${prod}
-    <div class="card" style="--i:5">
+    <div class="card viz" style="--i:5">${vizInner}<div class="viz-foot"><span>${c.vizLabel}</span><span><b id="vt-${k}">0</b> ${totLabel}</span></div></div>
+    <div class="card" style="--i:6">
       <div class="card-title"><i>03</i>Resumo</div>
       <div class="rows" id="det-${k}"></div>
       ${shareBtns(k)}
@@ -1476,8 +1476,6 @@ function simpleHTML() {
   const nq = (id, label, unit, ph, step) => `<label class="field"><span>${label}</span>${numIn('sq-' + id, SQ[id] ?? '', unit, step || 0, ph, `data-q="${id}"`)}</label>`;
   return `<section class="sec" id="sec-simples" hidden>
     <div class="sec-head" style="--i:0"><h2>Cálculo <em>rápido</em></h2><p>Espaço, peça e junta. Só isso.</p></div>
-    <div class="card viz" style="--i:1"><div class="viz-stage"><div id="viz-simples" style="width:100%;height:100%"></div></div>
-      <div class="viz-foot"><span>Vista do espaço</span><span><b id="vt-simples">0</b> m²</span></div></div>
     <div class="card" style="--i:2">
       <div class="card-title"><i>01</i>Tamanho do espaço</div>
       <div class="qseg" data-qgroup="modo"><button data-qv="dim" aria-pressed="${SQ.modo === 'dim'}">Comprimento × largura</button><button data-qv="area" aria-pressed="${SQ.modo === 'area'}">Já sei os m²</button></div>
@@ -1496,7 +1494,9 @@ function simpleHTML() {
       <div class="qseg" data-qgroup="pmode"><button data-qv="peca" aria-pressed="${SQ.pmode === 'peca'}">Preço por peça</button><button data-qv="m2" aria-pressed="${SQ.pmode === 'm2'}">Preço por m²</button></div>
       ${nq('preco', 'Preço (opcional)', 'MT', '38', 0)}
     </div>
-    <div class="card" style="--i:5">
+    <div class="card viz" style="--i:5"><div class="viz-stage"><div id="viz-simples" style="width:100%;height:100%"></div></div>
+      <div class="viz-foot"><span>Vista do espaço</span><span><b id="vt-simples">0</b> m²</span></div></div>
+    <div class="card" style="--i:6">
       <div class="card-title"><i>04</i>Resumo</div>
       <div class="rows" id="det-simples"></div>
       ${shareBtns('simples')}
