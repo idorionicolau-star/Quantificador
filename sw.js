@@ -1,6 +1,6 @@
 // Quantificador de Obra — service worker (funciona offline)
 // Ao actualizar a app, mude a versão abaixo para os telemóveis receberem a nova versão.
-const CACHE = 'quantificador-v18';
+const CACHE = 'quantificador-v19';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-192-maskable.png', 'icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
