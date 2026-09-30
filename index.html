@@ -583,7 +583,8 @@ const CFG = {
       { id: 'cf', name: 'Cobogó Folhas', model: 'folhas' },
       { id: 'cfl', name: 'Cobogó Flor', model: 'flor' },
       { id: 'ccr', name: 'Cobogó Cruz', model: 'cruz' },
-      { id: 'cq', name: 'Cobogó Quadrados', model: 'quad' }],
+      { id: 'cq', name: 'Cobogó 4 furos', model: 'quad', size: [30, 30] },
+      { id: 'cdv', name: 'Cobogó Duplo V', model: 'duplov', size: [50, 30] }],
     sel: 'cf',
     areas: [{ name: '', mode: 'dim', a: '', b: '', ops: [] }],
     note: 'Grelha assenta normalmente com junta de 1 cm. Para produtos por m², a junta já está incluída no número.' },
@@ -623,7 +624,22 @@ const VIEW = Object.assign({ muros: '2d', grelhas: '2d', pave: '2d', lajes: '2d'
 /* ================= cobogós (desenhos 100×100, a partir das fotos) ================= */
 const CC = '#C2C8C4', CH = '#121716', CS = '#8E9692';
 const Q4 = inner => ['', 'translate(100,0) scale(-1,1)', 'translate(0,100) scale(1,-1)', 'translate(100,100) scale(-1,-1)'].map(t => `<g transform="${t}">${inner}</g>`).join('');
+// preços das grelhas da Estaleiro Belos Artefatos (MT por grelha), pelo tamanho; o resto custa 120 MT
+const GRELHA_SIZES = [[20, 20, 110], [24, 24, 110], [30, 30, 120], [40, 20, 110], [40, 40, 250], [50, 30, 250], [60, 60, 600], [80, 80, 1200], [100, 60, 1200]];
+function grelhaPrice(model, w, h) {
+  w = Math.round(pf(w)); h = Math.round(pf(h));
+  if (model === 'quad' && w === 30 && h === 30) return 130; // 30×30 de 4 furos (mais grossa)
+  const f = GRELHA_SIZES.find(([a, b]) => (a === w && b === h) || (a === h && b === w));
+  return f ? f[2] : 120;
+}
+function setGrelhaPrice() {
+  const s = S.grelhas; if (!s) return;
+  const prod = allProducts('grelhas').find(p => p.id === s.sel);
+  if (!prod || !prod.model) return;
+  s.preco = grelhaPrice(prod.model, s.gw, s.gh); const el = $('grelhas-preco'); if (el) el.value = s.preco;
+}
 function cobogo(model) {
+  if (model === 'duplov') { const V = y => `<path d="M6 ${y}H22L50 ${y + 30}L78 ${y}H94L50 ${y + 48}Z" fill="${CH}"/>`; return `<rect width="100" height="100" fill="${CC}"/>${V(6)}${V(40)}`; }
   if (model === 'folhas') return `<rect width="100" height="100" fill="${CC}"/>` +
     `<path d="M37 8H63L50 30Z M37 92H63L50 70Z M8 37V63L30 50Z M92 37V63L70 50Z" fill="${CH}"/>` +
     Q4(`<ellipse cx="32" cy="20" rx="12" ry="5.5" transform="rotate(45 32 20)" fill="${CH}"/><ellipse cx="20" cy="32" rx="12" ry="5.5" transform="rotate(45 20 32)" fill="${CH}"/>`);
@@ -678,7 +694,7 @@ function secHTML(k) {
       ${k === 'grelhas' ? `<div class="extras"><div class="ttl">Tamanho da peça</div>
         <div class="fields"><label class="field"><span>Largura</span>${numIn(k + '-gw', s.gw, 'cm', 1, '', `data-s="gw"`)}</label>
         <label class="field"><span>Altura</span>${numIn(k + '-gh', s.gh, 'cm', 1, '', `data-s="gh"`)}</label></div>
-        <div class="chips" id="gsizes">${['20', '25', '30', '40'].map(v => `<button class="chip" aria-pressed="${s.gw == v && s.gh == v}" data-gs="${v}"><b>${v}×${v}</b><small>rápido</small></button>`).join('')}</div></div>` : ''}
+        <div class="chips" id="gsizes">${GRELHA_SIZES.map(([w, h]) => `<button class="chip" aria-pressed="${s.gw == w && s.gh == h}" data-gs="${w}x${h}"><b>${w === 100 ? '1 m' : w}×${h}</b><small>${grelhaPrice('', w, h)} MT</small></button>`).join('')}</div></div>` : ''}
       <div class="reveal closed" id="${k}-freebox"><div>
         <label class="field"><span>Quantas ${c.piece} entram em 1 m²</span>${numIn(k + '-free', s.free, c.piece + '/m²', 1, '', `data-s="free"`)}</label>
       </div></div>
@@ -1112,6 +1128,7 @@ function pformHTML(k) {
 }
 
 $('main').innerHTML = TABS.map(secHTML).join('');
+setGrelhaPrice(); syncGs('grelhas');
 TABS.forEach(k => { renderAreas(k); renderChips(k); const pf_ = $(k + '-pform'); if (pf_) pf_.innerHTML = pformHTML(k); });
 
 /* ================= ODÓMETRO (rolo de slot) ================= */
@@ -1593,7 +1610,7 @@ function update(k, immediate) {
   if (immediate) paintHero(results[tab], tab); else heroTimer = setTimeout(() => paintHero(results[tab], tab), 160);
 }
 
-function syncGs(k) { const b = $('gsizes'); if (!b) return; b.querySelectorAll('[data-gs]').forEach(x => x.setAttribute('aria-pressed', pf(S[k].gw) == +x.dataset.gs && pf(S[k].gh) == +x.dataset.gs)); }
+function syncGs(k) { const b = $('gsizes'); if (!b) return; b.querySelectorAll('[data-gs]').forEach(x => { const [w, h] = x.dataset.gs.split('x').map(Number); x.setAttribute('aria-pressed', pf(S[k].gw) == w && pf(S[k].gh) == h); const pr = allProducts(k).find(p => p.id === S[k].sel), sm = x.querySelector('small'); if (sm) sm.textContent = grelhaPrice(pr && pr.model, w, h) + ' MT'; }); }
 /* ================= MODO SIMPLES: espaço + peça + junta ================= */
 const SQ = Object.assign({ modo: 'dim', a: '', b: '', m: '', pl: '', pw: '', j: 0, perda: 5, perdaOn: 'com', preco: '', pmode: 'peca' }, store.get('qo-simple', {}), { a: '', b: '', m: '' });
 const PIECES = [['40', '20', 'Bloco 40×20'], ['20', '10', 'Pavê 20×10'], ['20', '20', '20×20'], ['30', '30', '30×30'], ['40', '40', '40×40'], ['60', '60', '60×60']];
@@ -1729,7 +1746,7 @@ document.addEventListener('input', e => {
     if (el.dataset.cf === 't') { const d = CUTS[c.t]; c.a = d.a; c.b = d.b; const cw = row.querySelector('.cuts'); cw.outerHTML = cutsHTML(k, r); }
     else { const h = row.querySelector('.cuts-h'); const tot = cutsArea(r); h.innerHTML = `<span>Recortes a descontar</span>${tot > 0 ? `<b>− ${fmt(tot, 2)} m²</b>` : ''}`; }
     update(k); }
-  else if (el.dataset.s) { S[k][el.dataset.s] = el.value; if (el.dataset.s === 'gw' || el.dataset.s === 'gh') { renderChips(k); syncGs(k); } update(k); }
+  else if (el.dataset.s) { S[k][el.dataset.s] = el.value; if (el.dataset.s === 'gw' || el.dataset.s === 'gh') { setGrelhaPrice(); renderChips(k); syncGs(k); } update(k); }
 });
 document.addEventListener('change', e => { if (e.target.matches('select[data-cf], select[data-of]')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
 document.addEventListener('click', e => {
@@ -1804,7 +1821,7 @@ document.addEventListener('click', e => {
     buzz(); refreshLanc(k, r); update(k); return;
   }
   const gs = t.closest('[data-gs]');
-  if (gs) { S[k].gw = S[k].gh = +gs.dataset.gs; $(k + '-gw').value = S[k].gw; $(k + '-gh').value = S[k].gh; buzz(); renderChips(k); syncGs(k); update(k); return; }
+  if (gs) { const [w, h] = gs.dataset.gs.split('x').map(Number); S[k].gw = w; S[k].gh = h; $(k + '-gw').value = w; $(k + '-gh').value = h; setGrelhaPrice(); buzz(); renderChips(k); syncGs(k); update(k); return; }
   const drb = t.closest('[data-draw]');
   if (drb) { openDraw(k, drb.dataset.draw); return; }
   const sideEl = t.closest('[data-side], [data-preset]');
@@ -1844,7 +1861,9 @@ document.addEventListener('click', e => {
   if (chipP) {
     S[k].sel = chipP.dataset.p; buzz();
     const prod = allProducts(k).find(p => p.id === S[k].sel);
+    if (prod && prod.size) { [S[k].gw, S[k].gh] = prod.size; $(k + '-gw').value = S[k].gw; $(k + '-gh').value = S[k].gh; syncGs(k); }
     if (prod && prod.price) { S[k].preco = prod.price; $(k + '-preco').value = prod.price; }
+    if (k === 'grelhas') { setGrelhaPrice(); syncGs(k); }
     $(k + '-pformbox').classList.add('closed');
     renderChips(k); update(k);
     const on = $('chips-' + k).querySelector('[aria-pressed="true"]'); on && on.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', inline: 'nearest', block: 'nearest' });
