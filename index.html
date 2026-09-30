@@ -1093,11 +1093,12 @@ function wallPattern(id, kind, model, pw, ph, g, x, y, key) {
   if (kind === 'grelha') return `<pattern id="${id}" width="${pw}" height="${ph}" patternUnits="userSpaceOnUse" x="${x}" y="${y}">
       <rect width="${pw}" height="${ph}" fill="#2a2f2d"/>
       <svg width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" viewBox="0 0 100 100" preserveAspectRatio="none">${cobogo(model)}</svg></pattern>`;
+  const r = Math.min(1, Math.max(0, pw - g) * .04); // canto arredondado proporcional ao bloco (no 3D as unidades são metros)
   return `<pattern id="${id}" width="${pw}" height="${ph * 2}" patternUnits="userSpaceOnUse" x="${x}" y="${y}">
       <rect width="${pw}" height="${ph * 2}" fill="#3a2a1c"/>
-      <rect width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/>
-      <rect x="${-pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/>
-      <rect x="${pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="1" fill="url(#bk-${key})"/></pattern>`;
+      <rect width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="${r}" fill="url(#bk-${key})"/>
+      <rect x="${-pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="${r}" fill="url(#bk-${key})"/>
+      <rect x="${pw / 2}" y="${ph}" width="${Math.max(0, pw - g)}" height="${Math.max(0, ph - g)}" rx="${r}" fill="url(#bk-${key})"/></pattern>`;
 }
 function drawWall(p, key) {
   // tudo à escala real: a mesma escala na horizontal e na vertical
