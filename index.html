@@ -150,6 +150,8 @@ body.focusing .dock-mini{flex-basis:56%;height:112px;opacity:1;border-color:var(
 .dock-num{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
 .odo.sm{font-size:42px;text-shadow:0 0 22px rgba(255,122,26,.3)}
 body.focusing .odo.sm{font-size:38px}
+.dock-price{font:800 18px/1 var(--display);letter-spacing:.03em;color:var(--good)}
+.dock-price[hidden]{display:none}
 .dock-unit{font:800 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding-bottom:.45em}
 .dock.reveal .dock-read{animation:reveal .8s var(--spring)}
 @keyframes reveal{0%{transform:scale(.92)}45%{transform:scale(1.08)}100%{transform:none}}
@@ -534,7 +536,7 @@ body.simple-mode .app{padding-bottom:40px}
 
 <div class="dock" id="dock" aria-hidden="true">
   <div class="dock-mini" id="dockMini"></div>
-  <div class="dock-read"><span class="dock-label" id="dockLabel">Blocos necessários</span><div class="dock-num"><div class="odo sm" id="dockOdo"></div><span class="dock-unit" id="dockUnit">blocos</span></div></div>
+  <div class="dock-read"><span class="dock-label" id="dockLabel">Blocos necessários</span><div class="dock-num"><div class="odo sm" id="dockOdo"></div><span class="dock-unit" id="dockUnit">blocos</span></div><span class="dock-price" id="dockPrice" hidden></span></div>
 </div>
 
 <div class="draw" id="draw" hidden>
@@ -692,11 +694,10 @@ function secHTML(k) {
       </div>
       <p class="rate-note" id="${k}-rate"></p>
       ${perdaHTML(k)}
-      <label class="field"><span>${c.kind === 'floor' ? 'Preço por m²' : 'Preço por ' + c.piece.replace(/s$/, '')} (opcional)</span>${numIn(k + '-preco', '', c.kind === 'floor' ? 'MT/m²' : 'MT', 0, c.kind === 'floor' ? 'ex.: 650' : 'ex.: 38', `data-s="preco"`)}</label>
+      <label class="field"><span>${c.kind === 'floor' ? 'Preço por m²' : 'Preço por ' + c.piece.replace(/s$/, '')} (opcional)</span>${numIn(k + '-preco', s.preco ?? '', c.kind === 'floor' ? 'MT/m²' : 'MT', 0, c.kind === 'floor' ? 'ex.: 650' : 'ex.: 38', `data-s="preco"`)}</label>
       ${c.kind === 'floor' ? `<div class="extras"><div class="ttl">Extras do pavê</div>
         <div class="seg" data-group="lancil" data-k="${k}"><span class="thumb"></span><button aria-pressed="true" data-v="sem">Sem lancil</button><button aria-pressed="false" data-v="com">Com lancil (meio-fio)</button></div>
-        <div class="fields"><label class="field" id="${k}-llfield"><span>Lancil: compr. da peça</span>${numIn(k + '-lancilLen', s.lancilLen, 'm', .5, '', `data-s="lancilLen"`)}</label>
-        <label class="field"><span>Areia de assentamento</span>${numIn(k + '-areiaEsp', s.areiaEsp, 'cm', 1, '', `data-s="areiaEsp"`)}</label></div></div>` : ''}
+        <div class="fields"><label class="field" id="${k}-llfield"><span>Lancil: compr. da peça</span>${numIn(k + '-lancilLen', s.lancilLen, 'm', .5, '', `data-s="lancilLen"`)}</label></div></div>` : ''}
     </div>`;
   }
   return `<section class="sec" id="sec-${k}" hidden>
@@ -1488,40 +1489,29 @@ function calcPieces(k) {
   const preco = pf(s.preco);
   const rows = [];
   s.areas.forEach((r, i) => rows.push([`${i + 1}. ${r.name || (c.areaWord ? 'Parte ' : 'Área ') + (i + 1)}`, per[i].net, 2, ' m²']));
-  rows.push(['Área total', net, 2, ' m²', 1], [`${c.piece[0].toUpperCase() + c.piece.slice(1)} por m²`, pm2, 1, ''], ['Sem perdas', Math.ceil(base), 0, ' ' + c.piece]);
-  let mortarTxt = '';
-  if (c.mortar && j > 0 && prod.L) {
-    const esp = prod.t || .15;
-    const arg = net * Math.max(0, 1 - pm2 * prod.L * prod.W) * esp;
-    const seco = arg * 1.3 * 1.3, cimKg = seco / 7 * 1440, areia = seco * 6 / 7, sacos = Math.ceil(cimKg / 50);
-    rows.push(['Cimento p/ assentar', sacos, 0, ' sacos', 1], ['Areia p/ assentar', areia, 2, ' m³', 1]);
-    mortarTxt = `\nCimento p/ assentar: ${sacos} sacos · Areia: ${fmt(areia)} m³`;
-  }
+  rows.push(['Área total', net, 2, ' m²', 1], [`${c.piece[0].toUpperCase() + c.piece.slice(1)} por m²`, pm2, 1, '']);
+  if (c.kind !== 'floor') rows.push([`${c.piece[0].toUpperCase() + c.piece.slice(1)} a comprar${perda > 0 ? ` (c/ ${fmt(perda)}% perdas)` : ''}`, total, 0, ' ' + c.piece, 1]);
   let extraTxt = '';
   if (c.kind === 'floor') {
     const cutsT = per.reduce((t, a) => t + (a.cuts || 0), 0), perimT = per.reduce((t, a) => t + (a.perim || 0), 0);
-    if (cutsT > 0) rows.splice(rows.length - 3, 0, ['Recortes descontados', cutsT, 2, ' m²']);
-    const areia = net * pf(s.areiaEsp) / 100 * (1 + perda / 100);
-    if (perimT > 0) rows.push(['Perímetro (contorno)', perimT, 2, ' m']);
+    if (cutsT > 0) rows.splice(rows.findIndex(r => r[0] === 'Área total'), 0, ['Recortes descontados', cutsT, 2, ' m²']);
     const lancT = per.reduce((t, a) => t + (a.lanc || 0), 0);
     if (s.lancil === 'com' && lancT > 0 && pf(s.lancilLen) > 0) { const nl = Math.ceil(lancT / pf(s.lancilLen) * (1 + perda / 100)); rows.push(['Lancil: lados escolhidos', lancT, 2, ' m'], [`Lancil (peças de ${fmt(pf(s.lancilLen))} m)`, nl, 0, ' un', 1]); extraTxt += `\nLancil: ${nl} peças de ${fmt(pf(s.lancilLen))} m (${fmt(lancT)} m nos lados escolhidos)`; }
-    if (pf(s.areiaEsp) > 0) { rows.push([`Areia de assentamento (${fmt(pf(s.areiaEsp))} cm)`, areia, 2, ' m³', 1]); extraTxt += `\nAreia de assentamento: ${fmt(areia)} m³`; }
   }
   // pavê: o preço é por m² — paga-se a área a comprar (área × perdas); os outros são por peça
   const m2exact = c.kind === 'floor' ? net * (1 + perda / 100) : 0, m2buy = net > 0 ? Math.ceil(m2exact - 1e-9) : 0;
   const pecasBuy = Math.round(m2buy * pm2);
   const valor = preco > 0 ? (c.kind === 'floor' ? m2buy * preco : total * preco) : 0;
   if (c.kind === 'floor') {
-    const i0 = rows.findIndex(r => r[0] === 'Sem perdas'); if (i0 >= 0) rows.splice(i0, 1);
     const ip = rows.findIndex(r => /por m²$/.test(r[0])) + 1;
-    if (net > 0) rows.splice(ip, 0, [perda > 0 ? `Área + ${fmt(perda)}% de perdas` : 'Área (sem perdas)', m2exact, 2, ' m²'], ['m² a comprar', m2buy, 0, ' m²', 1], ['Peças (só referência)', pecasBuy, 0, ' peças']);
+    if (net > 0) rows.splice(ip, 0, [`m² a comprar${perda > 0 ? ` (c/ ${fmt(perda)}% perdas)` : ''}`, m2buy, 0, ' m²', 1], ['Peças (só referência)', pecasBuy, 0, ' peças']);
   }
   if (preco > 0) rows.push([c.kind === 'floor' ? `Valor (${fmt(preco)} MT/m²)` : 'Valor', valor, 2, ' MT', 1]);
   const pname = prod.id === 'free' ? `${c.piece} (${fmt(pm2, 1)}/m²)` : prod.name;
   const jtxt = byM2 ? `${fmt(pm2, 1)} ${c.piece}/m²` : (j > 0 ? `junta ${fmt(pf(s.j))} ${c.jUnit}` : 'sem junta');
   const text = `*${c.kind === 'floor' ? 'Pavê' : c.pattern === 'grelha' ? 'Cobogós' : 'Blocos'} — ${prod.id === 'free' ? fmt(pm2, 1) + '/m²' : prod.name + (prod.model ? ` ${gtxt} cm` : '')}*\n` +
     s.areas.map((r, i) => areaLine(k, r, i)).join('\n') +
-    `\nTotal: ${fmt(net)} m² · ${jtxt} · perdas ${fmt(perda)}%\n➡️ *${c.kind === 'floor' ? `${m2buy.toLocaleString('pt-PT')} m² de pavê* (≈ ${pecasBuy.toLocaleString('pt-PT')} peças)` : `${total.toLocaleString('pt-PT')} ${c.piece}*`}` + mortarTxt + extraTxt + (preco > 0 ? `\nValor: ${fmtFix(valor, 2)} MT` + (c.kind === 'floor' ? ` (${fmt(preco)} MT/m²)` : '') : '');
+    `\nTotal: ${fmt(net)} m² · ${jtxt} · perdas ${fmt(perda)}%\n➡️ *${c.kind === 'floor' ? `${m2buy.toLocaleString('pt-PT')} m² de pavê* (≈ ${pecasBuy.toLocaleString('pt-PT')} peças)` : `${total.toLocaleString('pt-PT')} ${c.piece}*`}` + extraTxt + (preco > 0 ? `\nValor: ${fmtFix(valor, 2)} MT` + (c.kind === 'floor' ? ` (${fmt(preco)} MT/m²)` : '') : '');
   const nA = s.areas.length;
   let viz;
   if (c.kind === 'wall') viz = { th: c.pattern === 'grelha' ? .1 : (prod.t || .15), pattern: c.pattern, model: prod.model || 'quad', bl: PL || Math.sqrt(1 / Math.max(pm2, .1)), bh: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
@@ -1567,6 +1557,7 @@ function paintHero(r, key) {
   $('dockLabel').textContent = r.label; $('dockUnit').textContent = r.unit;
   $('h-sub').innerHTML = r.sub;
   $('h-price').hidden = !(r.price > 0);
+  $('dockPrice').hidden = !(r.price > 0); if (r.price > 0) countTo($('dockPrice'), r.price, 2, ' MT');
   if (r.price > 0) countTo($('h-price-v'), r.price, 2, ' MT');
   maxSeen[key] = Math.max(maxSeen[key] || 1, r.value * 1.25, 1);
   $('h-meter').style.transform = `scaleX(${Math.min(1, r.value / maxSeen[key])})`;
@@ -1647,7 +1638,7 @@ function calcSimple() {
   const pm2 = L > 0 && W > 0 ? 1 / ((L + j) * (W + j)) : 0;
   const base = area * pm2, total = Math.ceil(base * (1 + perda / 100)), m2buy = area * (1 + perda / 100);
   const valor = preco > 0 ? (SQ.pmode === 'm2' ? m2buy * preco : total * preco) : 0;
-  const rows = [['Área do espaço', area, 2, ' m²'], ['Peças por m²', pm2, 2, ''], ['Sem perdas', Math.ceil(base), 0, ' peças'], [perda > 0 ? `Com ${fmt(perda)}% de perdas` : 'Total (sem perdas)', total, 0, ' peças', 1]];
+  const rows = [['Área do espaço', area, 2, ' m²'], ['Peças por m²', pm2, 2, ''], [perda > 0 ? `Peças a comprar (c/ ${fmt(perda)}% perdas)` : 'Peças a comprar', total, 0, ' peças', 1]];
   if (SQ.pmode === 'm2') rows.push(['m² a comprar', m2buy, 2, ' m²']);
   if (valor > 0) rows.push(['Valor', valor, 2, ' MT', 1]);
   const peca = L && W ? `${fmt(L * 100)}×${fmt(W * 100)} cm` : '—';
@@ -2078,7 +2069,7 @@ async function runTour(k) {
   const prodEl = k === 'simples' ? $('sq-pieces') : $('chips-' + k);
   const orig = inputs.map(i => i.value);
   const ov = document.createElement('div'); ov.className = 'tour';
-  ov.innerHTML = `<div class="tour-ring"></div><div class="tour-hand">${HAND}</div><div class="tour-tip"><b></b><p></p><div class="tour-time"><i></i></div><div class="tour-btns"><button data-t="skip">Saltar</button><span class="tour-dots">${'<i></i>'.repeat(4)}</span><button class="go" data-t="next">Seguinte</button></div></div>`;
+  ov.innerHTML = `<div class="tour-ring"></div><div class="tour-hand">${HAND}</div><div class="tour-tip"><b></b><p></p><div class="tour-time"><i></i></div><div class="tour-btns"><button data-t="skip">Saltar</button><span class="tour-dots">${'<i></i>'.repeat(5)}</span><button class="go" data-t="next">Seguinte</button></div></div>`;
   document.body.appendChild(ov);
   const ring = ov.querySelector('.tour-ring'), hand = ov.querySelector('.tour-hand'), tip = ov.querySelector('.tour-tip'), bar = ov.querySelector('.tour-time i'), nextB = ov.querySelector('[data-t="next"]');
   let stop = false, goNext = null;
@@ -2126,12 +2117,18 @@ async function runTour(k) {
   const selChip = prodEl && (prodEl.querySelector('[aria-pressed="true"]') || prodEl.querySelector('button'));
   if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); }
   await waitNext();
-  await step($('hero'), 2, '3 · O resultado', k === 'pave' ? 'Aqui aparece logo quantos m² de pavê precisa comprar (o pavê vende-se por m²). No fim do ecrã pode enviar o resumo pelo WhatsApp.' : 'Aqui aparece logo quantas peças precisa. No fim do ecrã pode enviar o resumo pelo WhatsApp.');
+  await step($('hero'), 2, '3 · O resultado', k === 'pave' ? 'Aqui aparece logo quantos m² de pavê precisa comprar (o pavê vende-se por m²) e o preço.' : 'Aqui aparece logo quantas peças precisa comprar e o preço.');
   await handTo($('odo')); await tap();
+  await waitNext();
+  const resumo = $('det-' + k) && $('det-' + k).closest('.card');
+  await step(resumo, 3, '4 · O resumo e o WhatsApp', 'No fim fica o resumo: produto, quantidade e preço. Toque em “Enviar resumo” para mandar pelo WhatsApp, ou no botão ao lado para copiar e colar. É só isso!');
+  const shareB = resumo && resumo.querySelector('[data-share]'), copyB = resumo && resumo.querySelector('[data-copy]');
+  if (shareB) { await handTo(shareB); await tap(); }
+  if (copyB) { await handTo(copyB); await tap(); }
   await waitNext();
   if (!stop) { nextB.textContent = 'Começar'; ov.querySelector('[data-t="skip"]').hidden = true;
     handEl = null; hand.style.transform = `translate(${innerWidth / 2}px,${innerHeight + 40}px)`;
-    await step($('hero'), 3, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
+    await step($('hero'), 4, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
     await waitNext(); }
   cancelAnimationFrame(raf);
   if (k === 'simples') { Object.assign(SQ, origSQ); $('sq-pl').value = SQ.pl ?? ''; $('sq-pw').value = SQ.pw ?? ''; }
