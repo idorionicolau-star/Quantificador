@@ -433,8 +433,8 @@ body.drawing{overflow:hidden}
 .helpbtn:active{background:var(--accent);color:var(--accent-ink)}
 /* demonstração "Como usar" */
 .tour{position:fixed;inset:0;z-index:200;pointer-events:auto}
-.tour-ring{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(5,7,6,.72),0 0 0 3px var(--accent),0 0 30px 4px var(--glow);transition:left .8s var(--ease),top .8s var(--ease),width .8s var(--ease),height .8s var(--ease);pointer-events:none}
-.tour-hand{position:fixed;left:0;top:0;width:44px;height:44px;z-index:2;pointer-events:none;transition:transform 1.2s var(--ease);filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.tour-ring{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(5,7,6,.72),0 0 0 3px var(--accent),0 0 30px 4px var(--glow);transition:left .4s var(--ease),top .4s var(--ease),width .4s var(--ease),height .4s var(--ease);pointer-events:none}
+.tour-hand{position:fixed;left:0;top:0;width:44px;height:44px;z-index:2;pointer-events:none;transition:transform .6s var(--ease);filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
 .tour-hand svg{width:100%;height:100%;transition:transform .15s}
 .tour-hand.tap svg{transform:scale(.82)}
 .tour-hand::after{content:"";position:absolute;left:9px;top:-3px;width:14px;height:14px;border-radius:50%;border:2px solid var(--accent2);opacity:0}
@@ -2114,16 +2114,16 @@ async function runTour(k) {
   follow();
   const step = async (el, n, title, text) => {
     if (stop || !el) return; if (typeof n !== 'number') n = 0;
-    el.scrollIntoView({ block: 'center', behavior: RM ? 'auto' : 'smooth' }); await sleep(RM ? 50 : 900);
+    el.scrollIntoView({ block: 'center', behavior: RM ? 'auto' : 'smooth' }); await sleep(RM ? 50 : 450);
     ringEl = el;
     tip.querySelector('b').textContent = title; tip.querySelector('p').textContent = text;
     tip.querySelectorAll('.tour-dots i').forEach((d, i) => d.classList.toggle('on', i === n));
-    await sleep(RM ? 50 : 1500); // tempo para ler antes do dedo mexer
+    await sleep(RM ? 50 : 750); // tempo para ler antes do dedo mexer
   };
-  const handTo = async el => { if (stop || !el) return; handEl = el; await sleep(RM ? 50 : 1400); };
-  const tap = async () => { if (stop) return; hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); buzz(); await sleep(700); };
+  const handTo = async el => { if (stop || !el) return; handEl = el; await sleep(RM ? 50 : 700); };
+  const tap = async () => { if (stop) return; hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); buzz(); await sleep(350); };
   const type = async (inp, val) => { if (stop) return; await handTo(inp); await tap(); inp.value = '';
-    for (const ch of val) { if (stop) return; inp.value += ch; inp.dispatchEvent(new Event('input', { bubbles: true })); await sleep(RM ? 20 : 550); } await sleep(900); };
+    for (const ch of val) { if (stop) return; inp.value += ch; inp.dispatchEvent(new Event('input', { bubbles: true })); await sleep(RM ? 20 : 275); } await sleep(450); };
   hand.style.transform = `translate(${innerWidth / 2}px,${innerHeight + 40}px)`;
   const origSQ = { pl: SQ.pl, pw: SQ.pw };
   const demo = TOUR_DEMO[k] || ['5', '4'], L = k === 'muros' ? ['comprimento', 'altura'] : k === 'simples' ? ['comprimento', 'largura'] : ['comprimento', k === 'grelhas' ? 'altura' : 'largura'];
@@ -2141,14 +2141,14 @@ async function runTour(k) {
   }[k];
   await step(prodEl, si, num() + PT[0], PT[1]);
   const selChip = prodEl && (prodEl.querySelector('[aria-pressed="true"]') || prodEl.querySelector('button'));
-  if (k === 'pave') { const v = prodEl.querySelector(`[data-p="${S.pave.sel === 'v' ? 'borbulha' : 'v'}"]`); if (v) { await handTo(v); await tap(); if (!stop) v.click(); await sleep(600); await handTo($('pave-preco')); } }
+  if (k === 'pave') { const v = prodEl.querySelector(`[data-p="${S.pave.sel === 'v' ? 'borbulha' : 'v'}"]`); if (v) { await handTo(v); await tap(); if (!stop) v.click(); await sleep(300); await handTo($('pave-preco')); } }
   else if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); }
   await waitNext(); si++;
   if (k === 'grelhas' && !stop) {
     const gsz = $('gsizes');
     await step(gsz && gsz.closest('.extras') || gsz, si, num() + 'O tamanho e o preço', 'Toque no tamanho da grelha. Cada botão mostra o preço, e o preço por grelha muda sozinho.');
     const c30 = gsz && gsz.querySelector(`[data-gs="${pf(S.grelhas.gw) === 30 && pf(S.grelhas.gh) === 30 ? '40x40' : '30x30'}"]`);
-    if (c30) { await handTo(c30); await tap(); if (!stop) c30.click(); await sleep(600); await handTo($('grelhas-preco')); }
+    if (c30) { await handTo(c30); await tap(); if (!stop) c30.click(); await sleep(300); await handTo($('grelhas-preco')); }
     await waitNext(); si++;
   }
   if (k === 'pave') { await step($('pave-perdabox') && $('pave-perdabox').closest('.extras'), si, num() + 'As perdas', 'Escolha “Com perdas” (5% a mais, para quebras e cortes) ou “Sem perdas”.'); handEl = null; await handTo($('pave-perdabox').closest('.extras').querySelector('.seg [aria-pressed="true"]')); await tap(); await waitNext(); si++; }
