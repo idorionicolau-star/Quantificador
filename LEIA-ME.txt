@@ -32,4 +32,4 @@ GERAR APK
   pwabuilder.com > colar o link do Vercel > "Package for stores" > Android.
 
 ACTUALIZAR A APP
-  Substitua o index.html e mude CACHE = 'quantificador-v22' para v23, v24… no sw.js.
+  Substitua o index.html e mude CACHE = 'quantificador-v23' para v24, v25… no sw.js.

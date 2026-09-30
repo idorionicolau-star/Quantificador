@@ -222,6 +222,11 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-18px;padding-inline:18px;padding-block:2px;scroll-snap-type:x proximity}
 .chips::-webkit-scrollbar{display:none}
+/* pavê: todos os produtos à vista (grelha de 2 colunas) */
+#chips-pave{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;margin-inline:0;padding-inline:0}
+#chips-pave .chip{min-width:0;padding:9px 12px}
+#chips-pave .chip b{font-size:17px}
+#chips-pave .chip small{white-space:normal}
 .chip{flex:0 0 auto;scroll-snap-align:start;display:grid;gap:2px;text-align:left;border:1px solid var(--line2);background:var(--bg2);color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer;
   transition:transform .35s var(--spring),border-color .25s,background .25s,box-shadow .25s}
 .chip b{font:800 19px/1 var(--display);letter-spacing:.03em;text-transform:uppercase}
@@ -233,6 +238,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .reveal{display:grid;grid-template-rows:1fr;transition:grid-template-rows .45s var(--ease),opacity .35s}
 .reveal > div{overflow:hidden;min-height:0;display:grid;gap:14px}
 .reveal.closed{grid-template-rows:0fr;opacity:0}
+.card > .reveal.closed{position:absolute;visibility:hidden;pointer-events:none}
 
 /* detalhe */
 .rows{display:grid;gap:0}
@@ -578,14 +584,21 @@ const CFG = {
     sel: 'cf',
     areas: [{ name: '', mode: 'dim', a: '', b: '', ops: [] }],
     note: 'Grelha assenta normalmente com junta de 1 cm. Para produtos por m², a junta já está incluída no número.' },
-  pave: { kind: 'floor', unit: 'peças', label: 'Peças de pavê', piece: 'peças',
+  pave: { kind: 'floor', unit: 'm²', label: 'Pavê a comprar', piece: 'peças',
     title: 'Pavê', lede: 'Quintal, entrada, passeio… some tudo', vizLabel: 'Vista do pavimento', jUnit: 'mm', jDef: 3, junta: 'sem', freeDef: 50,
+    // pavês da Estaleiro Belos Artefatos — vendidos por m² (peças por m² e preço por m²)
     products: [
-      { id: 'p2010', name: 'Pavê 20×10', sub: 'rectangular', L: .20, W: .10 },
-      { id: 'p2020', name: 'Pavê 20×20', sub: 'quadrado', L: .20, W: .20 }],
-    sel: 'free',
+      { id: 'borbulha', name: 'Borbulha', pm2: 25, price: 680 },
+      { id: 'rect', name: 'Rectangular', pm2: 49, price: 680 },
+      { id: 'zigue', name: 'Zigue-zague', pm2: 41, price: 680 },
+      { id: 'v', name: 'Pavê V', pm2: 32, price: 750 },
+      { id: 'osso', name: 'Osso de cão', pm2: 29, price: 680 },
+      { id: 'chibababa', name: 'Chibababa', pm2: 16, price: 680 },
+      { id: 'aviao', name: 'Aviãozinho', pm2: 20, price: 680 },
+      { id: 'losango', name: 'Losângulo', pm2: 20, price: 680 }].map(p => ({ ...p, sub: `${p.pm2} pç/m² · ${p.price} MT` })),
+    sel: 'borbulha',
     areas: [{ name: '', mode: 'dim', a: '', b: '', cuts: [] }],
-    note: 'Pavê normalmente assenta sem junta (encostado). Se o produto é vendido por m², escreva quantas peças entram em 1 m².' },
+    note: 'O pavê é vendido por metro quadrado (m²), não por peça. O número de peças é só para referência. m² a comprar = área × perdas, arredondado para cima.' },
   lajes: { kind: 'slab', unit: 'sacos', label: 'Cimento · sacos 50 kg', piece: 'sacos',
     title: 'Lajes &amp; <em>betão</em>', lede: 'Lajes, vigas e pilares, tudo somado', vizLabel: 'Vista das peças',
     areas: [{ name: '', mode: 'laje', a: '', b: '', c: '', q: 1 }],
@@ -596,7 +609,7 @@ const wallOpen = r => opsArea(r) + (r.ops ? 0 : pf(r.d));
 const S = {};
 TABS.forEach(k => {
   const c = CFG[k];
-  S[k] = { sel: c.sel, junta: c.junta, j: c.jDef, perda: 5, perdaOn: 'com', preco: '', free: c.freeDef, traco: '1,2,3', gsize: '20', gw: 20, gh: 20, lancil: 'sem', lancilLen: 1, areiaEsp: 4,
+  S[k] = { sel: c.sel, junta: c.junta, j: c.jDef, perda: 5, perdaOn: 'com', preco: ((c.products || []).find(p => p.id === c.sel) || {}).price || '', free: c.freeDef, traco: '1,2,3', gsize: '20', gw: 20, gh: 20, lancil: 'sem', lancilLen: 1, areiaEsp: 4,
     areas: c.areas.map(a => ({ id: nid(), q: 1, c: 10, d: 0, m: '', v: '', ...a })),
     custom: store.get('qo-prod-' + k, []) };
 });
@@ -1494,15 +1507,20 @@ function calcPieces(k) {
     if (pf(s.areiaEsp) > 0) { rows.push([`Areia de assentamento (${fmt(pf(s.areiaEsp))} cm)`, areia, 2, ' m³', 1]); extraTxt += `\nAreia de assentamento: ${fmt(areia)} m³`; }
   }
   // pavê: o preço é por m² — paga-se a área a comprar (área × perdas); os outros são por peça
-  const m2buy = c.kind === 'floor' ? net * (1 + perda / 100) : 0;
+  const m2exact = c.kind === 'floor' ? net * (1 + perda / 100) : 0, m2buy = net > 0 ? Math.ceil(m2exact - 1e-9) : 0;
+  const pecasBuy = Math.round(m2buy * pm2);
   const valor = preco > 0 ? (c.kind === 'floor' ? m2buy * preco : total * preco) : 0;
-  if (c.kind === 'floor' && net > 0) rows.push(['m² a comprar (c/ perdas)', m2buy, 2, ' m²', 1]);
+  if (c.kind === 'floor') {
+    const i0 = rows.findIndex(r => r[0] === 'Sem perdas'); if (i0 >= 0) rows.splice(i0, 1);
+    const ip = rows.findIndex(r => /por m²$/.test(r[0])) + 1;
+    if (net > 0) rows.splice(ip, 0, [perda > 0 ? `Área + ${fmt(perda)}% de perdas` : 'Área (sem perdas)', m2exact, 2, ' m²'], ['m² a comprar', m2buy, 0, ' m²', 1], ['Peças (só referência)', pecasBuy, 0, ' peças']);
+  }
   if (preco > 0) rows.push([c.kind === 'floor' ? `Valor (${fmt(preco)} MT/m²)` : 'Valor', valor, 2, ' MT', 1]);
   const pname = prod.id === 'free' ? `${c.piece} (${fmt(pm2, 1)}/m²)` : prod.name;
   const jtxt = byM2 ? `${fmt(pm2, 1)} ${c.piece}/m²` : (j > 0 ? `junta ${fmt(pf(s.j))} ${c.jUnit}` : 'sem junta');
   const text = `*${c.kind === 'floor' ? 'Pavê' : c.pattern === 'grelha' ? 'Cobogós' : 'Blocos'} — ${prod.id === 'free' ? fmt(pm2, 1) + '/m²' : prod.name + (prod.model ? ` ${gtxt} cm` : '')}*\n` +
     s.areas.map((r, i) => areaLine(k, r, i)).join('\n') +
-    `\nTotal: ${fmt(net)} m² · ${jtxt} · perdas ${fmt(perda)}%\n➡️ *${total.toLocaleString('pt-PT')} ${c.piece}*` + mortarTxt + extraTxt + (c.kind === 'floor' && net > 0 ? `\nm² a comprar: ${fmt(m2buy)} m²` : '') + (preco > 0 ? `\nValor: ${fmtFix(valor, 2)} MT` + (c.kind === 'floor' ? ` (${fmt(preco)} MT/m²)` : '') : '');
+    `\nTotal: ${fmt(net)} m² · ${jtxt} · perdas ${fmt(perda)}%\n➡️ *${c.kind === 'floor' ? `${m2buy.toLocaleString('pt-PT')} m² de pavê* (≈ ${pecasBuy.toLocaleString('pt-PT')} peças)` : `${total.toLocaleString('pt-PT')} ${c.piece}*`}` + mortarTxt + extraTxt + (preco > 0 ? `\nValor: ${fmtFix(valor, 2)} MT` + (c.kind === 'floor' ? ` (${fmt(preco)} MT/m²)` : '') : '');
   const nA = s.areas.length;
   let viz;
   if (c.kind === 'wall') viz = { th: c.pattern === 'grelha' ? .1 : (prod.t || .15), pattern: c.pattern, model: prod.model || 'quad', bl: PL || Math.sqrt(1 / Math.max(pm2, .1)), bh: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
@@ -1512,7 +1530,7 @@ function calcPieces(k) {
   else viz = { tl: PL || Math.sqrt(1 / Math.max(pm2, .1)), tw: PW || Math.sqrt(1 / Math.max(pm2, .1)), j,
     shapes: s.areas.map((r, i) => ({ idx: i, pts: floorGeom(r).pts, lanc: s.lancil === 'com' ? (() => { const g = floorGeom(r), E = floorEdges(r, g), on = lancSel(r, E); return E.flatMap((e, j) => on[j] ? e.segs : []); })() : [], cuts: (r.cuts || []).map(c => ({ circ: (CUTS[c.t] || {}).circ ? 1 : 0, a: pf(c.a), b: pf(c.b), q: Math.max(0, Math.round(pf(c.q))) })) })) };
   return {
-    value: total, unit: c.piece, label: c.label, tag: perda > 0 ? `+${fmt(perda)}% perdas` : 'sem perdas',
+    value: c.kind === 'floor' ? m2buy : total, unit: c.kind === 'floor' ? 'm²' : c.piece, label: c.label, tag: perda > 0 ? `+${fmt(perda)}% perdas` : 'sem perdas',
     sub: `<span><b>${nA}</b> ${(c.areaWord || ['área', 'áreas'])[nA === 1 ? 0 : 1]}</span><span><b>${fmt(net, 1)}</b> m²</span><span><b>${fmt(pm2, 1)}</b> /m²</span><span>${esc(prod.id === 'free' ? 'por m²' : prod.name + (prod.model ? ` ${gtxt}` : ''))}</span>`,
     price: valor, rows, text, viz, per, total: net, gross, byM2, pm2, prod
   };
@@ -1562,7 +1580,7 @@ function updateSec(k) {
     const free = s.sel === 'free';
     $(k + '-freebox').classList.toggle('closed', !free);
     $(k + '-juntabox').classList.toggle('closed', r.byM2);
-    const jf = $(k + '-jfield'); jf.style.opacity = !r.byM2 && s.junta === 'com' ? 1 : .3; $(k + '-j').disabled = r.byM2 || s.junta !== 'com';
+    const jf = $(k + '-jfield'); jf.parentElement.style.display = r.byM2 ? 'none' : ''; jf.style.opacity = !r.byM2 && s.junta === 'com' ? 1 : .3; $(k + '-j').disabled = r.byM2 || s.junta !== 'com';
     if ($(k + '-llfield')) { $(k + '-llfield').style.opacity = s.lancil === 'com' ? 1 : .35; }
     $(k + '-perdabox').classList.toggle('closed', s.perdaOn === 'sem');
     $(k + '-rate').innerHTML = r.byM2 ? `Cálculo directo: <b>${fmt(r.pm2, 1)} ${c.piece}/m²</b> (junta já incluída)` : `Pela medida da peça: <b>${fmt(r.pm2, 2)} ${c.piece}/m²</b>`;
@@ -2093,7 +2111,7 @@ async function runTour(k) {
   await step(prodEl, 1, k === 'simples' ? '2 · A peça' : '2 · O produto', k === 'simples' ? 'Escolha a peça (ou escreva o tamanho dela) e a junta.' : 'Escolha a peça. Mais abaixo acerta a junta e as perdas.');
   const selChip = prodEl && (prodEl.querySelector('[aria-pressed="true"]') || prodEl.querySelector('button'));
   if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); await sleep(300); }
-  await step($('hero'), 2, '3 · O resultado', 'Aqui aparece logo quantas peças precisa. No fim do ecrã pode enviar o resumo pelo WhatsApp.');
+  await step($('hero'), 2, '3 · O resultado', k === 'pave' ? 'Aqui aparece logo quantos m² de pavê precisa comprar (o pavê vende-se por m²). No fim do ecrã pode enviar o resumo pelo WhatsApp.' : 'Aqui aparece logo quantas peças precisa. No fim do ecrã pode enviar o resumo pelo WhatsApp.');
   await handTo($('odo')); await tap(); await sleep(stop ? 0 : 900);
   if (!stop) { tip.querySelector('[data-t="next"]').hidden = false; tip.querySelector('[data-t="skip"]').hidden = true;
     await step($('hero'), 3, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
