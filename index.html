@@ -1491,7 +1491,7 @@ function areaLine(k, r, i) {
 function calcPieces(k) {
   const c = CFG[k], s = S[k];
   const prod = allProducts(k).find(p => p.id === s.sel) || allProducts(k)[0];
-  const byM2 = prod.id === 'free' || (prod.pm2 && !(prod.L && prod.W));
+  const byM2 = prod.id === 'free' || !!(prod.pm2 && !(prod.L && prod.W));
   const j = !byM2 ? Math.max(0, Math.min(c.jMax ?? Infinity, pf(s.j))) * (c.jUnit === 'cm' ? .01 : .001) : 0;
   const PL = prod.model ? pf(s.gw) / 100 : prod.L, PW = prod.model ? pf(s.gh) / 100 : prod.W;
   const gtxt = `${fmt(pf(s.gw))}×${fmt(pf(s.gh))}`;
@@ -1585,7 +1585,7 @@ function updateSec(k) {
   if (c.kind !== 'slab') {
     const free = s.sel === 'free';
     $(k + '-freebox').classList.toggle('closed', !free);
-    $(k + '-juntabox').classList.toggle('closed', r.byM2);
+    $(k + '-juntabox').classList.toggle('closed', !!r.byM2);
     
     if ($(k + '-llfield')) { $(k + '-llfield').style.opacity = s.lancil === 'com' ? 1 : .35; }
     $(k + '-perdabox').classList.toggle('closed', s.perdaOn === 'sem');
