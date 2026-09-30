@@ -2081,14 +2081,14 @@ const HAND = '<svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0
 let touring = false;
 const TOUR_WAIT = 20000; // cada passo espera "Seguinte" ou avança sozinho ao fim de 20 s
 async function runTour(k) {
-  if (touring || !k) return; touring = true; store.set('qo-tour-seen', 1);
+  if (touring || !k) return; touring = true; store.set('qo-tour2-' + k, 1);
   const sec = $('sec-' + k), vis = el => el && el.offsetParent !== null;
   const firstCard = sec.querySelector('.card');
   const inputs = [...(k === 'simples' ? firstCard : firstCard.querySelector('.area')).querySelectorAll('input[type=number]')].filter(vis).slice(0, 2);
   const prodEl = k === 'simples' ? $('sq-pieces') : $('chips-' + k);
   const orig = inputs.map(i => i.value);
   const ov = document.createElement('div'); ov.className = 'tour';
-  ov.innerHTML = `<div class="tour-ring"></div><div class="tour-hand">${HAND}</div><div class="tour-tip"><b></b><p></p><div class="tour-time"><i></i></div><div class="tour-btns"><button data-t="skip">Saltar</button><span class="tour-dots">${'<i></i>'.repeat(5)}</span><button class="go" data-t="next">Seguinte</button></div></div>`;
+  ov.innerHTML = `<div class="tour-ring"></div><div class="tour-hand">${HAND}</div><div class="tour-tip"><b></b><p></p><div class="tour-time"><i></i></div><div class="tour-btns"><button data-t="skip">Saltar</button><span class="tour-dots">${'<i></i>'.repeat(5 + (k === 'grelhas' || k === 'pave' ? 1 : 0))}</span><button class="go" data-t="next">Seguinte</button></div></div>`;
   document.body.appendChild(ov);
   const ring = ov.querySelector('.tour-ring'), hand = ov.querySelector('.tour-hand'), tip = ov.querySelector('.tour-tip'), bar = ov.querySelector('.tour-time i'), nextB = ov.querySelector('[data-t="next"]');
   let stop = false, goNext = null;
@@ -2115,7 +2115,7 @@ async function runTour(k) {
   };
   follow();
   const step = async (el, n, title, text) => {
-    if (stop || !el) return;
+    if (stop || !el) return; if (typeof n !== 'number') n = 0;
     el.scrollIntoView({ block: 'center', behavior: RM ? 'auto' : 'smooth' }); await sleep(RM ? 50 : 900);
     ringEl = el;
     tip.querySelector('b').textContent = title; tip.querySelector('p').textContent = text;
@@ -2132,30 +2132,50 @@ async function runTour(k) {
   await step(inputs[0] && inputs[0].closest('.fields, .area-fields') || firstCard, 0, '1 · As medidas', `Escreva o ${L[0]} e a ${L[1]} do espaço, em metros. Pode juntar mais partes com o botão “+”.`);
   for (let i = 0; i < inputs.length; i++) await type(inputs[i], demo[i]);
   await waitNext();
-  await step(prodEl, 1, k === 'simples' ? '2 · A peça' : '2 · O produto', k === 'simples' ? 'Escolha a peça (ou escreva o tamanho dela) e a junta.' : k === 'pave' ? 'Escolha o pavê. Mais abaixo acerta as perdas.' : 'Escolha a peça. Mais abaixo acerta a junta e as perdas.');
+  let si = 1; const num = () => `${si + 1} · `;
+  // guardar o produto/tamanho/preço actuais para repor no fim
+  const origSel = k === 'simples' ? null : { sel: S[k].sel, gw: S[k].gw, gh: S[k].gh, preco: S[k].preco };
+  const PT = {
+    simples: ['A peça', 'Toque na peça (ou escreva o tamanho dela) e escolha a junta.'],
+    muros: ['O bloco', 'Toque no bloco que vai usar: 10, 15 ou 20. Mais abaixo acerta a junta, as perdas e o preço.'],
+    grelhas: ['O modelo', 'Toque no modelo da grelha. A “4 furos” e a “Duplo V” já escolhem o seu tamanho sozinhas.'],
+    pave: ['O pavê', 'Toque no pavê que o cliente quer. O preço por m² muda sozinho — veja, o Pavê V é 750 MT/m².']
+  }[k];
+  await step(prodEl, si, num() + PT[0], PT[1]);
   const selChip = prodEl && (prodEl.querySelector('[aria-pressed="true"]') || prodEl.querySelector('button'));
-  if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); }
-  await waitNext();
-  await step($('hero'), 2, '3 · O resultado', k === 'pave' ? 'Aqui aparece logo quantos m² de pavê precisa comprar (o pavê vende-se por m²) e o preço.' : 'Aqui aparece logo quantas peças precisa comprar e o preço.');
+  if (k === 'pave') { const v = prodEl.querySelector(`[data-p="${S.pave.sel === 'v' ? 'borbulha' : 'v'}"]`); if (v) { await handTo(v); await tap(); if (!stop) v.click(); await sleep(600); await handTo($('pave-preco')); } }
+  else if (selChip) { await handTo(selChip); await tap(); if (k === 'simples' && !stop && !(pf(SQ.pl) > 0 && pf(SQ.pw) > 0)) selChip.click(); }
+  await waitNext(); si++;
+  if (k === 'grelhas' && !stop) {
+    const gsz = $('gsizes');
+    await step(gsz && gsz.closest('.extras') || gsz, si, num() + 'O tamanho e o preço', 'Toque no tamanho da grelha. Cada botão mostra o preço, e o preço por grelha muda sozinho.');
+    const c30 = gsz && gsz.querySelector(`[data-gs="${pf(S.grelhas.gw) === 30 && pf(S.grelhas.gh) === 30 ? '40x40' : '30x30'}"]`);
+    if (c30) { await handTo(c30); await tap(); if (!stop) c30.click(); await sleep(600); await handTo($('grelhas-preco')); }
+    await waitNext(); si++;
+  }
+  if (k === 'pave') { await step($('pave-perdabox') && $('pave-perdabox').closest('.extras'), si, num() + 'As perdas', 'Escolha “Com perdas” (5% a mais, para quebras e cortes) ou “Sem perdas”.'); handEl = null; await handTo($('pave-perdabox').closest('.extras').querySelector('.seg [aria-pressed="true"]')); await tap(); await waitNext(); si++; }
+  await step($('hero'), si, num() + 'O resultado', k === 'pave' ? 'Aqui aparece logo quantos m² de pavê precisa comprar (o pavê vende-se por m²) e o preço.' : 'Aqui aparece logo quantas peças precisa comprar e o preço.');
   await handTo($('odo')); await tap();
-  await waitNext();
+  await waitNext(); si++;
   const resumo = $('det-' + k) && $('det-' + k).closest('.card');
-  await step(resumo, 3, '4 · O resumo e o WhatsApp', 'No fim fica o resumo: produto, quantidade e preço. Toque em “Enviar resumo” para mandar pelo WhatsApp, ou no botão ao lado para copiar e colar. É só isso!');
+  await step(resumo, si, num() + 'O resumo e o WhatsApp', 'No fim fica o resumo: produto, quantidade e preço. Toque em “Enviar resumo” para mandar pelo WhatsApp, ou no botão ao lado para copiar e colar. É só isso!');
   const shareB = resumo && resumo.querySelector('[data-share]'), copyB = resumo && resumo.querySelector('[data-copy]');
   if (shareB) { await handTo(shareB); await tap(); }
   if (copyB) { await handTo(copyB); await tap(); }
-  await waitNext();
+  await waitNext(); si++;
   if (!stop) { nextB.textContent = 'Começar'; ov.querySelector('[data-t="skip"]').hidden = true;
     handEl = null; hand.style.transform = `translate(${innerWidth / 2}px,${innerHeight + 40}px)`;
-    await step($('hero'), 4, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
+    await step($('hero'), si, 'Agora é a sua vez', 'Os números de exemplo vão ser apagados. Pode rever esta demonstração no botão “?” lá em cima.');
     await waitNext(); }
   cancelAnimationFrame(raf);
   if (k === 'simples') { Object.assign(SQ, origSQ); $('sq-pl').value = SQ.pl ?? ''; $('sq-pw').value = SQ.pw ?? ''; }
+  else { Object.assign(S[k], origSel); const set = (id, v) => { const e = $(id); if (e) e.value = v ?? ''; };
+    set(k + '-preco', S[k].preco); set(k + '-gw', S[k].gw); set(k + '-gh', S[k].gh); renderChips(k); syncGs(k); }
   inputs.forEach((inp, i) => { inp.value = orig[i]; inp.dispatchEvent(new Event('input', { bubbles: true })); });
   ov.remove(); touring = false; scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
 }
-// aparece sozinha só na primeira vez que a pessoa abre a app; depois, pelo botão "?"
-const maybeTour = k => { if (!store.get('qo-tour-seen', 0)) setTimeout(() => { if (tab === k && !touring && !document.body.classList.contains('drawing')) runTour(k); }, 1200); };
+// aparece sozinha na primeira vez que a pessoa abre cada parte (Simples, Muros, Grelhas, Pavê); depois, pelo botão "?"
+const maybeTour = k => { if (!store.get('qo-tour2-' + k, 0)) setTimeout(() => { if (tab === k && !touring && !document.body.classList.contains('drawing')) runTour(k); }, 1200); };
 $('helpBtn').addEventListener('click', () => runTour(tab));
 
 /* splash + arranque */
